@@ -87,6 +87,7 @@ CDocLine* CDocLineMgr::AddNewLine()
 //! 全ての行を削除する
 void CDocLineMgr::DeleteAllLine()
 {
+	NoteChange();
 	CDocLine* pDocLine = m_pDocLineTop;
 	while( pDocLine ){
 		CDocLine* pDocLineNext = pDocLine->GetNextLine();
@@ -137,6 +138,7 @@ void CDocLineMgr::DeleteLine( CDocLine* pcDocLineDel )
 //! 元のCDocLineMgrの内容は空になる
 void CDocLineMgr::AppendAsMove( CDocLineMgr& other )
 {
+	NoteChange();
 	if( other.GetDocLineTop() == nullptr ){ return; }
 
 	// 双方向リンクをつなぐ

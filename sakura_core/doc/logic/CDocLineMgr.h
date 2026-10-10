@@ -23,6 +23,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <cstdint>
 #include <memory_resource>
 #include <memory>
 #include "_main/global.h" // 2002/2/10 aroka
@@ -56,6 +57,19 @@ public:
 
 	//状態
 	CLogicInt GetLineCount() const{ return m_nLines; }	//!< 全行数を返す
+
+	/*!
+		@brief 本文のリビジョン番号を返す
+
+		本文が変更された「可能性」があるたびに増える、単調増加の番号。
+		内容が実際に変わったかどうかは区別しない(同じ内容に書き換えても増える)。
+		0に戻ることはなく、DeleteAllLine()でもリセットしない。
+		番号が同じなら本文は同じ、という使い方ができる。値の大小や増え方に意味はない。
+		このインスタンスを書き換えるスレッドと同じスレッドから読むこと。
+	*/
+	std::uint64_t GetRevision() const noexcept { return m_nRevision; }
+	//! 本文が変更された可能性があることを記録する(リビジョン番号を進める)
+	void NoteChange() noexcept { ++m_nRevision; }
 
 	//行データへのアクセス
 	const CDocLine* GetLine( CLogicInt nLine ) const;						//!< 指定行を取得
@@ -98,6 +112,7 @@ private:
 	CDocLine*	m_pDocLineTop;		//!< 最初の行
 	CDocLine*	m_pDocLineBot;		//!< 最後の行(※1行しかない場合はm_pDocLineTopと等しくなる)
 	CLogicInt	m_nLines;			//!< 全行数
+	std::uint64_t	m_nRevision = 0;	//!< 本文のリビジョン番号。_Init()で戻さないこと
 	std::shared_ptr<std::pmr::memory_resource> m_docLineMemRes;
 
 public:

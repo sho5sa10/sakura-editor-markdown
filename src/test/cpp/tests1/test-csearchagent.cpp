@@ -10,7 +10,9 @@
 #include "cmd/COpeBlk.h"
 
 #include <array>
+#include <cstdint>
 #include <initializer_list>
+#include <set>
 #include <string_view>
 #include <utility>
 #include "doc/logic/CDocLineMgr.h"
@@ -452,4 +454,96 @@ TEST(CSearchAgent, ReplaceData10)
 	EXPECT_EQ(arg.nDeletedLineNum, 0);
 	EXPECT_EQ(arg.nInsLineNum, 0);
 	EXPECT_EQ(arg.ptNewPos, CLogicPoint(13, 0));
+}
+
+/*!
+	CSearchAgent::ReplaceData のテスト
+
+	本文を書き換えるたびに、文書のリビジョン番号が進むことの検査。
+	Markdownプレビューなどが、変更を取りこぼさずに検知するために使う。
+ */
+TEST(CSearchAgent, ReplaceDataAdvancesRevision)
+{
+	CDocLineMgr m;
+	SetLines(m, 1, {L"AAA\n", L"BBB\n"});
+	const auto initial = m.GetRevision();
+
+	// 挿入
+	COpeLineData insData = MakeOpeLineData({{L"X", 2}});
+	COpeLineData delData;
+	DocLineReplaceArg arg;
+	arg.sDelRange = CLogicRange(CLogicPoint(0, 0), CLogicPoint(0, 0));
+	arg.pcmemDeleted = &delData;
+	arg.pInsData = &insData;
+	arg.nDelSeq = 0;
+	arg.nInsSeq = -1;
+	CSearchAgent(&m).ReplaceData(&arg, false);
+	const auto afterInsert = m.GetRevision();
+	EXPECT_GT(afterInsert, initial);
+
+	// 削除(挿入なし)
+	COpeLineData delData2;
+	DocLineReplaceArg del;
+	del.sDelRange = CLogicRange(CLogicPoint(0, 0), CLogicPoint(1, 0));
+	del.pcmemDeleted = &delData2;
+	del.pInsData = nullptr;
+	del.nDelSeq = 0;
+	del.nInsSeq = -1;
+	CSearchAgent(&m).ReplaceData(&del, false);
+	const auto afterDelete = m.GetRevision();
+	EXPECT_GT(afterDelete, afterInsert);
+	EXPECT_STREQ(m.GetLine(CLogicInt(0))->GetPtr(), L"AAA\n");
+
+	// 変更のない呼び出し(空の削除と挿入)でも、番号は進む。「変更された可能性」を表す番号なので
+	COpeLineData delData3;
+	DocLineReplaceArg none;
+	none.sDelRange = CLogicRange(CLogicPoint(0, 0), CLogicPoint(0, 0));
+	none.pcmemDeleted = &delData3;
+	none.pInsData = nullptr;
+	none.nDelSeq = 0;
+	none.nInsSeq = -1;
+	CSearchAgent(&m).ReplaceData(&none, false);
+	EXPECT_GT(m.GetRevision(), afterDelete);
+}
+
+/*!
+	「編集A → Undo → 編集B」のように、COpeBuf::GetCurrentPointer()が同じ値に戻る操作でも、
+	リビジョン番号は同じ値に戻らないことの検査。
+ */
+TEST(CSearchAgent, ReplaceDataNeverRepeatsRevision)
+{
+	CDocLineMgr m;
+	SetLines(m, 1, {L"AAA\n"});
+	std::set<std::uint64_t> seen{m.GetRevision()};
+
+	const auto replace = [&](const wchar_t* text) {
+		COpeLineData insData = MakeOpeLineData({{text, 2}});
+		COpeLineData delData;
+		DocLineReplaceArg arg;
+		arg.sDelRange = CLogicRange(CLogicPoint(0, 0), CLogicPoint(0, 0));
+		arg.pcmemDeleted = &delData;
+		arg.pInsData = &insData;
+		arg.nDelSeq = 0;
+		arg.nInsSeq = -1;
+		CSearchAgent(&m).ReplaceData(&arg, false);
+		return m.GetRevision();
+	};
+	const auto removeFirstChar = [&] {
+		COpeLineData delData;
+		DocLineReplaceArg arg;
+		arg.sDelRange = CLogicRange(CLogicPoint(0, 0), CLogicPoint(1, 0));
+		arg.pcmemDeleted = &delData;
+		arg.pInsData = nullptr;
+		arg.nDelSeq = 0;
+		arg.nInsSeq = -1;
+		CSearchAgent(&m).ReplaceData(&arg, false);
+		return m.GetRevision();
+	};
+
+	// 編集A(挿入)、Undo(削除)、編集B(別の挿入)、Undo、...
+	for (int i = 0; i < 10; ++i) {
+		EXPECT_TRUE(seen.insert(replace(i % 2 ? L"A" : L"B")).second);
+		EXPECT_TRUE(seen.insert(removeFirstChar()).second);
+	}
+	EXPECT_STREQ(m.GetLine(CLogicInt(0))->GetPtr(), L"AAA\n");
 }

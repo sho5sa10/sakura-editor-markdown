@@ -26,6 +26,19 @@
 #include <time.h>
 #endif
 
+namespace {
+//! 生存期間の前後で、文書のリビジョン番号を進める
+class CRevisionNotifier {
+public:
+	explicit CRevisionNotifier( CDocLineMgr* pcDocLineMgr ) noexcept : m_pcDocLineMgr( pcDocLineMgr ) { m_pcDocLineMgr->NoteChange(); }
+	~CRevisionNotifier() { m_pcDocLineMgr->NoteChange(); }
+	CRevisionNotifier( const CRevisionNotifier& ) = delete;
+	CRevisionNotifier& operator=( const CRevisionNotifier& ) = delete;
+private:
+	CDocLineMgr* m_pcDocLineMgr;
+};
+} // namespace
+
 // CSearchStringPattern
 // @date 2010.06.22 Moca
 inline int CSearchStringPattern::GetMapIndex( wchar_t c )
@@ -716,6 +729,10 @@ end_of_func:;
 */
 void CSearchAgent::ReplaceData( DocLineReplaceArg* pArg, bool bEnableExtEol )
 {
+	// 本文を書き換える処理は、入力、削除、置換、Undo/Redo、マクロなどすべてここを通る。
+	// 書き換えの前後(途中で抜けても例外でも)でリビジョン番号を進める。
+	CRevisionNotifier cRevisionNotifier( m_pcDocLineMgr );
+
 //	MY_RUNNINGTIMER( cRunningTimer, "CDocLineMgr::ReplaceData()" );
 
 	/* 挿入によって増えた行の数 */

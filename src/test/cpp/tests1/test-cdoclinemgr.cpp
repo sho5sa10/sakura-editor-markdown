@@ -133,3 +133,56 @@ TEST(CDocLineMgr, RandomAccess)
 	EXPECT_EQ(m.GetLine(CLogicInt(60)), lines[60]);
 	EXPECT_EQ(m.GetLine(CLogicInt(70)), lines[70]);
 }
+
+/*!
+	リビジョン番号の検査。
+	本文が変更された可能性があるたびに進み、戻らないこと。
+ */
+TEST(CDocLineMgr, RevisionStartsAtZero)
+{
+	CDocLineMgr m;
+	EXPECT_EQ(m.GetRevision(), 0U);
+}
+
+TEST(CDocLineMgr, RevisionNeverGoesBack)
+{
+	CDocLineMgr m;
+	const auto r0 = m.GetRevision();
+
+	// 全消去で進む。空の状態に何度戻しても、同じ番号には戻らない(_Init()でリセットしない)
+	m.DeleteAllLine();
+	const auto r1 = m.GetRevision();
+	EXPECT_GT(r1, r0);
+	m.DeleteAllLine();
+	EXPECT_GT(m.GetRevision(), r1);
+
+	// 空の他のマネージャーを追加する場合でも進む(読み込み完了時の呼び出しを想定)
+	const auto r2 = m.GetRevision();
+	CDocLineMgr empty;
+	m.AppendAsMove(empty);
+	EXPECT_GT(m.GetRevision(), r2);
+
+	// 行の入った他のマネージャーを追加する。追加元の番号は、追加先に影響しない
+	CDocLineMgr other;
+	other.SetMemoryResource(m.GetMemoryResource());	// 行の所有権が移るので、メモリリソースを共有する(CReadManagerと同じ)
+	other.AddNewLine()->SetDocLineString(L"A\n", 2, false);
+	const auto r3 = m.GetRevision();
+	const auto otherRevision = other.GetRevision();
+	m.AppendAsMove(other);
+	EXPECT_GT(m.GetRevision(), r3);
+	EXPECT_EQ(m.GetLineCount(), 1);
+	EXPECT_EQ(other.GetRevision(), otherRevision);	// 追加元は、移動してもここでは進めない
+}
+
+TEST(CDocLineMgr, RevisionIsPerInstance)
+{
+	// ファイル読み込みでは、別のスレッドが一時的なマネージャーに行を追加する。
+	// 表示中の文書のリビジョン番号は、それに影響されないこと。
+	CDocLineMgr shown;
+	const auto before = shown.GetRevision();
+	CDocLineMgr temporary;
+	temporary.AddNewLine();
+	temporary.AddNewLine();
+	temporary.DeleteAllLine();
+	EXPECT_EQ(shown.GetRevision(), before);
+}
