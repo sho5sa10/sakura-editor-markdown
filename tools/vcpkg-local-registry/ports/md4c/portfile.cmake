@@ -6,6 +6,10 @@
 #     This macro changes the type MD_CHAR in md4c.h, so every file that includes md4c.h
 #     must define it as well (sakura_core/markdown/Md4cParser.cpp does).
 #   - Do not build the HTML renderer. md4c does not support UTF-16 in it.
+#   - strikethrough-flanking.patch: make the strikethrough (~~) use the same left/right-flanking
+#     rules as the asterisk emphasis, as cmark-gfm (GitHub) does. Unpatched md4c 0.6.0 does not
+#     strike "a~~b~~c" (it treats ~~ like an intra-word underscore), which breaks Japanese text
+#     where words are not separated by spaces. See sakura_core/markdown/README.md.
 
 if(NOT VCPKG_TARGET_IS_WINDOWS)
   message(FATAL_ERROR "The md4c port of Sakura Editor supports Windows targets only (MD4C_USE_UTF16 requires Windows).")
@@ -19,6 +23,7 @@ vcpkg_from_github(
   HEAD_REF master
   PATCHES
     cmake.patch
+    strikethrough-flanking.patch
 )
 
 # vcpkg_cmake_configure requires VCPKG_C_FLAGS and VCPKG_CXX_FLAGS to be set together.

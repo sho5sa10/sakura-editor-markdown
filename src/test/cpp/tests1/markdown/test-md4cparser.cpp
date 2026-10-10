@@ -40,6 +40,56 @@ std::wstring PlainText(const InlineRuns& runs)
 	return text;
 }
 
+//! 装飾のついた範囲を {B|太字} {I|斜体} {S|取消} {C|コード} のように表す。複数の装飾は B I S C の順に並べる
+std::wstring Styled(const InlineRuns& runs)
+{
+	std::wstring text;
+	for (const auto& run : runs) {
+		if (run.style == InlineStyle::None) {
+			text += run.text;
+			continue;
+		}
+		std::wstring tag;
+		if (run.style & InlineStyle::Bold) tag += L'B';
+		if (run.style & InlineStyle::Italic) tag += L'I';
+		if (run.style & InlineStyle::Strike) tag += L'S';
+		if (run.style & InlineStyle::Code) tag += L'C';
+		text += L"{" + tag + L"|" + run.text + L"}";
+	}
+	return text;
+}
+
+//! 失敗の表示用に、UTF-8にする(ナロー文字列リテラルはコードページ932になるので、比較には使わない)
+std::string Utf8(const std::wstring& text)
+{
+	std::string utf8(text.size() * 3 + 1, '\0');
+	const int length = ::WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), utf8.data(), static_cast<int>(utf8.size()), nullptr, nullptr);
+	utf8.resize(length);
+	return utf8;
+}
+
+//! 1段落のMarkdownを解析して、装飾のついた範囲を表す文字列にする
+std::wstring StyledParagraph(std::wstring_view source)
+{
+	const auto doc = Parse(source);
+	return doc.blocks.size() == 1U ? Styled(doc.blocks[0].runs) : L"<blocks=" + std::to_wstring(doc.blocks.size()) + L">";
+}
+
+struct InlineCase {
+	const wchar_t*	source;
+	const wchar_t*	expected;
+};
+
+//! 1ケースを確かめる。失敗したときは、入力、期待値、実際の結果を、読める文字で表示する
+void ExpectStyled(const InlineCase& c)
+{
+	const std::wstring actual = StyledParagraph(c.source);
+	EXPECT_TRUE(actual == c.expected)
+		<< "source:   " << Utf8(c.source) << "\n"
+		<< "expected: " << Utf8(c.expected) << "\n"
+		<< "actual:   " << Utf8(actual);
+}
+
 } // namespace
 
 TEST(Md4cParser, EmptyInput)
@@ -371,4 +421,81 @@ TEST(Md4cParser, ParserCanBeUsedFromSeveralThreads)
 	}
 	for (auto& th : threads) th.join();
 	EXPECT_EQ(okCount.load(), 200);
+}
+
+// ---- 日本語の文中の ~~ * _ ----
+//
+// 期待値は、GitHub Flavored Markdownの参照実装(cmark-gfm 0.29.0.gfm.x)に同じ入力を通した結果。
+// 区切り記号の前後が空白や句読点でなくてもよい(英単語の間に空白を置かない日本語の文章では、これが普通)。
+
+TEST(Md4cParser, InlineDelimitersInJapanese)
+{
+	// 取り消し線(~~)。md4c 0.6.0そのままでは、前後が文字だと取り消し線にならない(パッチで、*と同じ規則にしてある)
+	static const InlineCase strike[] = {
+		{ L"日本語~~取消~~", L"日本語{S|取消}" },
+		{ L"~~取消~~です", L"{S|取消}です" },
+		{ L"日本語~~取消~~です", L"日本語{S|取消}です" },
+		{ L"日本語 ~~取消~~ です", L"日本語 {S|取消} です" },
+		{ L"日本語、~~取消~~、です", L"日本語、{S|取消}、です" },
+		{ L"日本語（~~取消~~）です", L"日本語（{S|取消}）です" },
+		{ L"日本語「~~取消~~」です", L"日本語「{S|取消}」です" },
+		{ L"ASCII ~~del~~ text", L"ASCII {S|del} text" },
+		{ L"ASCII~~del~~text", L"ASCII{S|del}text" },
+		// 内側が括弧で囲まれ、外側が文字のときは、*と同じ規則で取り消し線にならない(cmark-gfmも同じ)
+		{ L"~~「取消」~~です", L"~~「取消」~~です" },
+		// 空白が前後にある ~~ は区切りにならない
+		{ L"a ~~ b ~~ c", L"a ~~ b ~~ c" },
+	};
+	for (const auto& c : strike) {
+		ExpectStyled(c);
+	}
+}
+
+TEST(Md4cParser, UnderscoreInJapaneseFollowsCommonMark)
+{
+	// _ は、単語の途中では強調にならない(CommonMarkの規則。cmark-gfmも同じ)。日本語では ASCII の単語と同じ扱い。
+	// 日本語の強調には、前後が文字でも使える * を使うこと。
+	static const InlineCase underscore[] = {
+		{ L"日本語_強調_です", L"日本語_強調_です" },
+		{ L"漢字_強調_漢字", L"漢字_強調_漢字" },
+		{ L"foo_bar_baz", L"foo_bar_baz" },
+		{ L"ASCII_em_text", L"ASCII_em_text" },
+		{ L"日本語 _強調_ です", L"日本語 {I|強調} です" },
+		{ L"（_強調_）", L"（{I|強調}）" },
+		{ L"、_強調_、", L"、{I|強調}、" },
+		{ L"ASCII _em_ text", L"ASCII {I|em} text" },
+	};
+	for (const auto& c : underscore) {
+		ExpectStyled(c);
+	}
+}
+
+TEST(Md4cParser, AsteriskInJapanese)
+{
+	static const InlineCase asterisk[] = {
+		{ L"**日本語の太字**", L"{B|日本語の太字}" },
+		{ L"日本語**太字**です", L"日本語{B|太字}です" },
+		{ L"漢字*強調*漢字", L"漢字{I|強調}漢字" },
+		{ L"ASCII*em*text", L"ASCII{I|em}text" },
+		{ L"**強調**、次の文", L"{B|強調}、次の文" },
+	};
+	for (const auto& c : asterisk) {
+		ExpectStyled(c);
+	}
+}
+
+TEST(Md4cParser, AsteriskNextToJapanesePunctuationIsALimitOfCommonMark)
+{
+	// 内側の端が句読点・括弧で、外側が文字だと、強調にならない。CommonMarkの仕様どおりで、
+	// GitHubの参照実装(cmark-gfm)も同じ結果になる(md4c固有の問題ではない)。回避するには、**の外側に空白を置く。
+	static const InlineCase limit[] = {
+		{ L"**「強調」**です", L"**「強調」**です" },
+		{ L"日本語**「強調」**です", L"日本語**「強調」**です" },
+		{ L"**強調（括弧）**です", L"**強調（括弧）**です" },
+		{ L"**強調。**次の文", L"**強調。**次の文" },
+		{ L"**「強調」** です", L"{B|「強調」} です" },
+	};
+	for (const auto& c : limit) {
+		ExpectStyled(c);
+	}
 }

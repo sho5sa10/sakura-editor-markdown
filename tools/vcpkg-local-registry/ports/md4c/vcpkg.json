@@ -1,7 +1,7 @@
 {
   "name": "md4c",
   "version": "0.6.0",
-  "port-version": 0,
+  "port-version": 1,
   "description": "MD4C is a C library providing a Markdown parser. This port builds the UTF-16 variant (MD4C_USE_UTF16) for Sakura Editor.",
   "homepage": "https://github.com/mity/md4c",
   "license": "MIT",

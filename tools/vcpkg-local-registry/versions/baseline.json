@@ -18,7 +18,7 @@
     },
     "md4c": {
       "baseline": "0.6.0",
-      "port-version": 0
+      "port-version": 1
     },
     "onigmo": {
       "baseline": "6.2.0",
