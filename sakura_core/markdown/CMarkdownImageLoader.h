@@ -73,12 +73,15 @@ public:
 	/*!
 		@brief 同期で1枚を読み込む(安全の確認から、デコードまで)
 
-		ワーカーが使うほか、単体テストでも使う。呼び出したスレッドでCOMを使う
-		(初期化されていなければ、この関数の中で初期化して終わりに戻す)。
+		単体テストなどで使う。デコードは専用のスレッドで行い、完了まで待つ。
+		呼び出したスレッドのCOMの状態(初期化の有無や方式)には影響しない。
 	*/
 	static Image Load(const ImageLocation& location, const Limits& limits = Limits{});
 
 private:
+	//! Loadの本体。呼び出したスレッドでCOMを使う(初期化されていなければ、中で初期化して終わりに戻す)。ワーカーが使う
+	static Image LoadOnThisThread(const ImageLocation& location, const Limits& limits);
+
 	struct State;
 	std::shared_ptr<State>	m_state;
 	std::thread				m_thread;
