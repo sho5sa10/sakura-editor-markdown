@@ -299,3 +299,34 @@ TEST(MarkdownImageLoader, ShutdownStopsNotifyingAndRefusesRequests)
 	}
 	SUCCEED();
 }
+
+TEST(MarkdownImageLoader, RejectsSymbolicLinksThatLeadOutsideTheRoot)
+{
+	TempFolder folder;
+	const auto root = folder.MakeDirectory(L"root");
+	const auto outsideDir = folder.MakeDirectory(L"outside");
+	const auto secret = outsideDir / L"secret.png";
+	TempFolder::WritePng(secret);
+
+	// ファイルのシンボリックリンク(rootの中にあるように見えるが、実体は外にある)
+	const auto fileLink = root / L"alias.png";
+	if (!::CreateSymbolicLinkW(fileLink.c_str(), secret.c_str(), SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
+		GTEST_SKIP() << "シンボリックリンクを作れなかった(開発者モードか、管理者権限が必要)。error=" << ::GetLastError();
+	}
+	ASSERT_TRUE(fs::exists(fileLink));
+	EXPECT_FALSE(CMarkdownImageLoader::Load(Location(root, fileLink)).ok);
+
+	// フォルダのシンボリックリンク
+	const auto dirLink = root / L"dirlink";
+	if (::CreateSymbolicLinkW(dirLink.c_str(), outsideDir.c_str(), SYMBOLIC_LINK_FLAG_DIRECTORY | SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
+		EXPECT_FALSE(CMarkdownImageLoader::Load(Location(root, dirLink / L"secret.png")).ok);
+	}
+
+	// rootの中を指すシンボリックリンクは、読める
+	const auto inside = root / L"real.png";
+	TempFolder::WritePng(inside);
+	const auto insideLink = root / L"alias2.png";
+	if (::CreateSymbolicLinkW(insideLink.c_str(), inside.c_str(), SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
+		EXPECT_TRUE(CMarkdownImageLoader::Load(Location(root, insideLink)).ok);
+	}
+}

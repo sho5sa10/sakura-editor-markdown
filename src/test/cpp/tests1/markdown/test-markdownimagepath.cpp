@@ -124,3 +124,13 @@ TEST(MarkdownImagePath, RejectsOversizedNames)
 	deep += L"x.png";
 	EXPECT_FALSE(Resolve(deep).has_value());
 }
+
+TEST(MarkdownImagePath, RejectsDriveRelativePaths)
+{
+	// "C:a.png" は、Cドライブのカレントフォルダからの相対パス。文書のフォルダとは無関係なので拒否する
+	EXPECT_FALSE(Resolve(L"C:a.png").has_value());
+	EXPECT_FALSE(Resolve(L"D:images\\a.png").has_value());
+	EXPECT_FALSE(Resolve(L"C:\\a.png").has_value());
+	EXPECT_FALSE(Resolve(L"\\\\server\\share\\a.png").has_value());
+	EXPECT_FALSE(Resolve(L"//server/share/a.png").has_value());
+}
