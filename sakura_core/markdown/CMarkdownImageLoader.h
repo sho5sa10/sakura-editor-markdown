@@ -21,6 +21,13 @@
 
 namespace markdown {
 
+//! 読み込みの上限(GCCは、クラスの中の入れ子の型の既定メンバー初期化子を、そのクラスの中では使えないので外に出している)
+struct ImageLoadLimits {
+	std::uint64_t	maxFileBytes = 32ULL * 1024 * 1024;		//!< ファイルの大きさ
+	std::uint64_t	maxSourcePixels = 64ULL * 1024 * 1024;	//!< 画像の画素数(デコード前)
+	std::uint32_t	maxEdge = 2048;							//!< これを超える辺は、縮小してデコードする
+};
+
 /*!
 	@brief Markdownのローカル画像を、バックグラウンドで読み込んでデコードする
 
@@ -31,12 +38,7 @@ namespace markdown {
 */
 class CMarkdownImageLoader {
 public:
-	//! 読み込みの上限
-	struct Limits {
-		std::uint64_t	maxFileBytes = 32ULL * 1024 * 1024;		//!< ファイルの大きさ
-		std::uint64_t	maxSourcePixels = 64ULL * 1024 * 1024;	//!< 画像の画素数(デコード前)
-		std::uint32_t	maxEdge = 2048;							//!< これを超える辺は、縮小してデコードする
-	};
+	using Limits = ImageLoadLimits;
 
 	//! 読み込みの結果
 	struct Image {
