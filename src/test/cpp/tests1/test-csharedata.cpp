@@ -1934,7 +1934,8 @@ TEST_F(CShareDataTest, GetMacroFilename102)
 	// テストのために共有データを弄る
 	auto& sMacro = shareData.m_Common.m_sMacro;
 	const std::wstring macroFolder{ sMacro.m_szMACROFOLDER };
-	sMacro.m_szMACROFOLDER[0] = L'\0';
+	// 範囲外アクセスはm_szMACROFOLDERの途中を読むので、全体をクリアしておく(パスが長い環境でも結果が変わらないように)
+	::wmemset(sMacro.m_szMACROFOLDER, 0, std::size(sMacro.m_szMACROFOLDER));
 
 	EXPECT_THAT(pcShareData->GetMacroFilename(MAX_CUSTMACRO, nullptr, 0), Eq(0)); // 👈バグです。インデックスに上限を上回る値を指定したときに、範囲外アクセスしています。
 
