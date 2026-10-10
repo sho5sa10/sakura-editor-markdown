@@ -86,6 +86,9 @@
     <Filter Include="Cpp Source Files\macro">
       <UniqueIdentifier>{ea97049b-340b-4481-8de3-41f5f1e539f5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cpp Source Files\markdown">
+      <UniqueIdentifier>{6d0c9a42-31f7-4b58-a9e3-84c1f5b207d6}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Cpp Source Files\dlg">
       <UniqueIdentifier>{ff6fd676-e25b-46d9-a373-226df382d8ce}</UniqueIdentifier>
     </Filter>
@@ -1143,6 +1146,33 @@
     </ClInclude>
     <ClInclude Include="..\sakura_core\macro\CPythonMacroManager.h">
       <Filter>Cpp Source Files\macro</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\CMarkdownPreviewWnd.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\CMarkdownPreviewWorker.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\CMarkdownImageLoader.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\MarkdownImagePath.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\IMarkdownParser.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\MarkdownLayout.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\MarkdownModel.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\MarkdownText.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\Md4cParser.h">
+      <Filter>Cpp Source Files\markdown</Filter>
     </ClInclude>
     <ClInclude Include="..\src\main\cpp\cxx\load_string.hpp">
       <Filter>Cpp Source Files\cxx</Filter>
@@ -2346,6 +2376,24 @@
     </ClCompile>
     <ClCompile Include="..\sakura_core\macro\CPythonMacroManager.cpp">
       <Filter>Cpp Source Files\macro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\markdown\CMarkdownPreviewWnd.cpp">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\markdown\CMarkdownPreviewWorker.cpp">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\markdown\CMarkdownImageLoader.cpp">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\markdown\MarkdownImagePath.cpp">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\markdown\MarkdownLayout.cpp">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\markdown\Md4cParser.cpp">
+      <Filter>Cpp Source Files\markdown</Filter>
     </ClCompile>
     <ClCompile Include="..\src\main\cpp\cxx\load_string.cpp">
       <Filter>Cpp Source Files\cxx</Filter>

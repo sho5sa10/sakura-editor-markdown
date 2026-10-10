@@ -59,6 +59,10 @@ class CPlug;
 class CEditDoc;
 struct DLLSHAREDATA;
 
+namespace markdown {
+class CMarkdownPreviewWnd;
+}
+
 //メインウィンドウ内コントロールID
 #define IDT_EDIT		455  // 20060128 aroka
 #define IDT_TOOLBAR		456
@@ -192,6 +196,13 @@ public:
 	void LayoutStatusBar( void );		/* ステータスバーの配置処理 */		// 2006.12.19 ryoji
 	void LayoutMiniMap();				// ミニマップの配置処理
 	void EndLayoutBars( BOOL bAdjust = TRUE );	/* バーの配置終了処理 */	// 2006.12.19 ryoji
+
+	// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
+	//                     Markdownプレビュー                      //
+	// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
+	void ToggleMarkdownPreview();				//!< Markdownプレビューの表示/非表示
+	bool IsMarkdownPreviewVisible() const noexcept { return m_bMarkdownPreviewVisible; }	//!< プレビューを表示中か
+	bool IsMarkdownPreviewAvailable() const;	//!< 今の文書でプレビューを開けるか(メニューの有効判定用)
 
 	// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
 	//                           設定                              //
@@ -386,6 +397,18 @@ private:
 	CEditViewsArray	m_pcEditViewArr{};	//!< ビュー
 	CEditView*		m_pcEditView;		//!< 有効なビュー
 	CMiniMapView	m_cMiniMapView;		//!< ミニマップ
+
+	// Markdownプレビュー
+	void UpdateMarkdownPreview();								//!< 文書と見た目をプレビューに反映する
+	void UpdateMarkdownPreviewIfNeeded();						//!< 文書が変わっていれば、編集が止まったところでプレビューを更新する(タイマーから呼ぶ)
+	void ApplyMarkdownPreviewAppearance();						//!< エディタの色とフォントをプレビューに反映する
+	int CalcMarkdownPreviewWidth( int nEditAreaWidth ) const;	//!< 編集領域の幅から、プレビューの幅を決める
+	std::unique_ptr<markdown::CMarkdownPreviewWnd>	m_pcMarkdownPreview;	//!< Markdownプレビュー
+	bool			m_bMarkdownPreviewVisible = false;			//!< Markdownプレビューを表示中か
+	bool			m_bMarkdownRequested = false;				//!< プレビューに文書の解析を依頼済みか
+	std::uint64_t	m_nMarkdownRequestedRevision = 0;			//!< 解析を依頼した文書のリビジョン番号(CDocLineMgr::GetRevision)
+	std::wstring	m_strMarkdownRequestedPath;					//!< 解析を依頼した文書のパス(画像の相対パスの基準が変わるので、リビジョンとは別に見る)
+	std::uint64_t	m_nMarkdownObservedRevision = 0;			//!< 前回のタイマーで見たリビジョン番号(編集中かどうかの判定用)
 	int				m_nActivePaneIndex = 0;	//!< 有効なビューのindex
 	int				m_nEditViewCount = 1;	//!< 有効なビューの数
 	const int		m_nEditViewMaxCount = int(std::size(m_pcEditViewArr));//!< ビューの最大数=4

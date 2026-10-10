@@ -291,6 +291,7 @@ void PrintTo(EFunctionCode eFuncCode, std::ostream* os)
 	case F_SHOWSTATUSBAR: *os << "F_SHOWSTATUSBAR"; break;
 	case F_SHOWTAB: *os << "F_SHOWTAB"; break;
 	case F_SHOWMINIMAP: *os << "F_SHOWMINIMAP"; break;
+	case F_TOGGLE_MARKDOWN_PREVIEW: *os << "F_TOGGLE_MARKDOWN_PREVIEW"; break;
 	case F_TYPE_LIST: *os << "F_TYPE_LIST"; break;
 	case F_OPTION_TYPE: *os << "F_OPTION_TYPE"; break;
 	case F_OPTION: *os << "F_OPTION"; break;

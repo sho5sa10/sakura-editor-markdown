@@ -2744,6 +2744,7 @@ END
 STRINGTABLE
 BEGIN
     F_SHOWMINIMAP           "Hide/Show Mini Map"
+    F_TOGGLE_MARKDOWN_PREVIEW "Show/Hide Markdown Preview"
     F_TYPE_LIST             "File type list"
     F_OPTION_TYPE           "File type settings"
     F_OPTION                "Common Settings"

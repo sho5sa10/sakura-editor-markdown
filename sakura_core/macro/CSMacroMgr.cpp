@@ -313,6 +313,7 @@ MacroFuncInfo CSMacroMgr::m_MacroFuncInfoCommandArr[] =
 	{F_SHOWTAB,					L"ShowTab",			{VT_EMPTY, VT_EMPTY, VT_EMPTY, VT_EMPTY},	VT_EMPTY,	nullptr}, /* タブの表示 */	//@@@ 2003.06.10 MIK
 	{F_SHOWSTATUSBAR,			L"ShowStatusbar",		{VT_EMPTY, VT_EMPTY, VT_EMPTY, VT_EMPTY},	VT_EMPTY,	nullptr}, /* ステータスバーの表示 */
 	{F_SHOWMINIMAP,				L"ShowMiniMap",		{VT_EMPTY, VT_EMPTY, VT_EMPTY, VT_EMPTY},	VT_EMPTY,	nullptr}, // ミニマップの表示
+	{F_TOGGLE_MARKDOWN_PREVIEW,	L"ToggleMarkdownPreview",	{VT_EMPTY, VT_EMPTY, VT_EMPTY, VT_EMPTY},	VT_EMPTY,	nullptr}, // Markdownプレビューの表示/非表示
 	{F_TYPE_LIST,				L"TypeList",			{VT_EMPTY, VT_EMPTY, VT_EMPTY, VT_EMPTY},	VT_EMPTY,	nullptr}, /* タイプ別設定一覧 */
 	{F_CHANGETYPE,				L"ChangeType",		{VT_I4,    VT_EMPTY, VT_EMPTY, VT_EMPTY},	VT_EMPTY,	nullptr}, //タイプ別設定一時適用 2013.05.02
 	{F_OPTION_TYPE,				L"OptionType",		{VT_EMPTY, VT_EMPTY, VT_EMPTY, VT_EMPTY},	VT_EMPTY,	nullptr}, /* タイプ別設定 */

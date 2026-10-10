@@ -63,6 +63,9 @@
 #include "macro/CMacroFactory.h"
 #include "view/colors/CColorStrategy.h"
 #include "view/figures/CFigureManager.h"
+#include "types/CTypeSupport.h"
+#include "markdown/CMarkdownPreviewWnd.h"
+#include "markdown/Md4cParser.h"
 
 //@@@ 2002.01.14 YAZAKI 印刷プレビューをCPrintPreviewに独立させたので
 //	定義を削除
@@ -1801,6 +1804,8 @@ LRESULT CEditWnd::DispatchEvent(
 		default:
 			break;
 		}
+		// Markdownプレビューにも色とフォントの変更を反映する
+		ApplyMarkdownPreviewAppearance();
 		return 0L;
 	case MYWM_SAVEEDITSTATE:
 		{
@@ -2933,6 +2938,9 @@ void CEditWnd::PrintPreviewModeONOFF( void )
 		if( m_cMiniMapView.GetHwnd() ){
 			::ShowWindow( m_cMiniMapView.GetHwnd(), SW_SHOW );
 		}
+		if( m_pcMarkdownPreview && m_bMarkdownPreviewVisible ){
+			m_pcMarkdownPreview->Show( true );
+		}
 
 		// その他のモードレスダイアログも戻す	// 2010.06.25 ryoji
 		::ShowWindow( m_cDlgFind.GetHwnd(), SW_SHOW );
@@ -2966,6 +2974,9 @@ void CEditWnd::PrintPreviewModeONOFF( void )
 		::ShowWindow( m_cDlgFuncList.GetHwnd(), SW_HIDE );	// 2010.06.25 ryoji
 		if( m_cMiniMapView.GetHwnd() ){
 			::ShowWindow( m_cMiniMapView.GetHwnd(), SW_HIDE );
+		}
+		if( m_pcMarkdownPreview ){
+			m_pcMarkdownPreview->Show( false );
 		}
 
 		// その他のモードレスダイアログも隠す	// 2010.06.25 ryoji
@@ -3295,11 +3306,26 @@ LRESULT CEditWnd::OnSize2( WPARAM wParam, LPARAM lParam, bool bUpdateStatus )
 		m_cMiniMapView.SplitBoxOnOff( FALSE, FALSE, bMiniMapSizeBox );
 	}
 
+	// Markdownプレビュー(エディタの右、ミニマップの左に置く)
+	const int nEditAreaWidth = ((eDockSideFL == DOCKSIDE_LEFT || eDockSideFL == DOCKSIDE_RIGHT)? cx - nFuncListWidth: cx) - nMiniMapWidth;
+	int nMarkdownPreviewWidth = 0;
+	if( m_bMarkdownPreviewVisible && !m_pPrintPreview && m_pcMarkdownPreview && m_pcMarkdownPreview->IsCreated() ){
+		nMarkdownPreviewWidth = CalcMarkdownPreviewWidth( nEditAreaWidth );
+		const int nEditAreaLeft = (eDockSideFL == DOCKSIDE_LEFT)? nFuncListWidth: 0;
+		m_pcMarkdownPreview->Move(
+			nEditAreaLeft + nEditAreaWidth - nMarkdownPreviewWidth,
+			(eDockSideFL == DOCKSIDE_TOP)? nTop + nFuncListHeight: nTop,
+			nMarkdownPreviewWidth,
+			(eDockSideFL == DOCKSIDE_TOP || eDockSideFL == DOCKSIDE_BOTTOM)? nHeight - nFuncListHeight: nHeight
+		);
+		m_pcMarkdownPreview->Show( nMarkdownPreviewWidth > 0 );
+	}
+
 	::MoveWindow(
 		m_cSplitterWnd.GetHwnd(),
 		(eDockSideFL == DOCKSIDE_LEFT)? nFuncListWidth: 0,
 		(eDockSideFL == DOCKSIDE_TOP)? nTop + nFuncListHeight: nTop,	//@@@ 2003.05.31 MIK
-		((eDockSideFL == DOCKSIDE_LEFT || eDockSideFL == DOCKSIDE_RIGHT)? cx - nFuncListWidth: cx) - nMiniMapWidth,
+		nEditAreaWidth - nMarkdownPreviewWidth,
 		(eDockSideFL == DOCKSIDE_TOP || eDockSideFL == DOCKSIDE_BOTTOM)? nHeight - nFuncListHeight: nHeight,	//@@@ 2003.05.31 MIK
 		TRUE
 	);
@@ -4204,6 +4230,9 @@ void CEditWnd::OnEditTimer( void )
 	// タイマーの呼び出し間隔を 500msに変更。300*10→500*6にする。 20060128 aroka
 	IncrementTimerCount(6);
 
+	// Markdownプレビューの自動更新(500msごと。m_nTimerCountの周期とは無関係に確認する)
+	UpdateMarkdownPreviewIfNeeded();
+
 	// 2006.01.28 aroka ツールバー更新関連は OnToolbarTimerに移動した。
 
 	//	Aug. 29, 2003 wmlhq, ryoji
@@ -4819,4 +4848,141 @@ void CEditWnd::ClearViewCaretPosInfo()
 	for( int v = 0; v < GetAllViewCount(); ++v ){
 		GetView(v).GetCaret().ClearCaretPosInfoCache();
 	}
+}
+
+// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
+//                     Markdownプレビュー                      //
+// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
+
+/*!
+	@brief Markdownプレビューを開けるか
+
+	保存済みの文書はMarkdownの拡張子のとき、未保存の文書は常に開ける。
+	表示中は、保存し直して拡張子が変わっても閉じられるように、常に有効にする。
+*/
+bool CEditWnd::IsMarkdownPreviewAvailable() const
+{
+	if( m_bMarkdownPreviewVisible ){
+		return true;
+	}
+	const CFilePath& path = GetDocument()->m_cDocFile.GetFilePathClass();
+	if( !path.IsValidPath() ){
+		return true;
+	}
+	const WCHAR* pszExt = path.GetExt( true );
+	for( const WCHAR* pszName : { L"md", L"markdown", L"mdown", L"mkd" } ){
+		if( 0 == ::_wcsicmp( pszExt, pszName ) ){
+			return true;
+		}
+	}
+	return false;
+}
+
+//! 編集領域の幅から、プレビューの幅を決める。編集領域が狭すぎるときは0(表示しない)
+int CEditWnd::CalcMarkdownPreviewWidth( int nEditAreaWidth ) const
+{
+	const int nMinEditor = ::DpiScaleX( 160 );
+	const int nMinPreview = ::DpiScaleX( 160 );
+	int nWidth = nEditAreaWidth / 2;
+	if( nEditAreaWidth - nWidth < nMinEditor ){
+		nWidth = nEditAreaWidth - nMinEditor;
+	}
+	return (nWidth < nMinPreview)? 0: nWidth;
+}
+
+//! Markdownプレビューの表示/非表示を切り替える
+void CEditWnd::ToggleMarkdownPreview()
+{
+	if( m_pPrintPreview ){
+		return;	// 印刷プレビュー中は切り替えない
+	}
+	if( m_bMarkdownPreviewVisible ){
+		m_bMarkdownPreviewVisible = false;
+		if( m_pcMarkdownPreview ){
+			m_pcMarkdownPreview->Show( false );
+		}
+	}else{
+		if( !m_pcMarkdownPreview ){
+			m_pcMarkdownPreview = std::make_unique<markdown::CMarkdownPreviewWnd>();
+		}
+		if( !m_pcMarkdownPreview->IsCreated() && !m_pcMarkdownPreview->Create( GetHwnd() ) ){
+			m_pcMarkdownPreview.reset();
+			return;
+		}
+		m_pcMarkdownPreview->SetParser( markdown::CreateMd4cParser() );
+		m_bMarkdownPreviewVisible = true;
+		UpdateMarkdownPreview();
+	}
+	// プレビューの分だけエディタの幅を変える
+	RECT rc;
+	::GetClientRect( GetHwnd(), &rc );
+	OnSize2( m_nWinSizeType, MAKELONG( rc.right - rc.left, rc.bottom - rc.top ), false );
+}
+
+//! エディタの文字色・背景色・フォントをプレビューに反映する
+void CEditWnd::ApplyMarkdownPreviewAppearance()
+{
+	if( !m_pcMarkdownPreview || !m_pcMarkdownPreview->IsCreated() ){
+		return;
+	}
+	const CTypeSupport cTextType( &GetActiveView(), COLORIDX_TEXT );
+	m_pcMarkdownPreview->SetColors( cTextType.GetTextColor(), cTextType.GetBackColor() );
+	m_pcMarkdownPreview->SetEditorFont( GetLogfont() );
+}
+
+//! 文書の内容と、エディタの見た目をプレビューに反映する
+void CEditWnd::UpdateMarkdownPreview()
+{
+	if( !m_pcMarkdownPreview || !m_pcMarkdownPreview->IsCreated() ){
+		return;
+	}
+	ApplyMarkdownPreviewAppearance();
+
+	// 文書の内容を取り出す。解析できる上限を超える分は、コピーせずに打ち切る。
+	// リビジョン番号は、内容を取り出す前に読む(取り出している間に変わっても、次回に更新される)
+	const std::uint64_t nRevision = GetDocument()->m_cDocLineMgr.GetRevision();
+	const markdown::ParseOptions options;
+	std::wstring source;
+	for( const CDocLine* pcDocLine = GetDocument()->m_cDocLineMgr.GetDocLineTop();
+		pcDocLine != nullptr && source.size() <= options.maxInputChars;
+		pcDocLine = pcDocLine->GetNextLine() ){
+		CLogicInt nLineLen = CLogicInt(0);
+		const wchar_t* pLine = CDocLine::GetDocLineStrWithEOL_Safe( pcDocLine, &nLineLen );
+		if( pLine != nullptr && 0 < nLineLen ){
+			source.append( pLine, static_cast<size_t>( nLineLen ) );
+		}
+	}
+	m_pcMarkdownPreview->SetDocumentPath( GetDocument()->m_cDocFile.GetFilePath() );	// 画像の基準のフォルダ
+	// 解析はバックグラウンドで行い、できたら表示が差し替わる。続けて依頼したときは最新のものだけが表示される
+	m_pcMarkdownPreview->QueueSource( std::move( source ), options );
+
+	m_bMarkdownRequested = true;
+	m_nMarkdownRequestedRevision = nRevision;
+	m_nMarkdownObservedRevision = nRevision;
+	m_strMarkdownRequestedPath = GetDocument()->m_cDocFile.GetFilePath();
+}
+
+/*!
+	@brief 文書が変わっていれば、編集が止まったところでプレビューを更新する
+
+	リビジョン番号(CDocLineMgr::GetRevision)が前回のタイマーと同じ=この間に編集されていない、
+	かつ反映済みの番号と違うときに更新する。入力中は何度も解析しない。
+	COpeBuf::GetCurrentPointer()は、編集A→Undo→編集Bで同じ値に戻るので使わない。
+*/
+void CEditWnd::UpdateMarkdownPreviewIfNeeded()
+{
+	if( !m_bMarkdownPreviewVisible || m_pPrintPreview ){
+		return;
+	}
+	const std::uint64_t nRevision = GetDocument()->m_cDocLineMgr.GetRevision();
+	const bool bSamePath = (m_strMarkdownRequestedPath == GetDocument()->m_cDocFile.GetFilePath());
+	if( m_bMarkdownRequested && nRevision == m_nMarkdownRequestedRevision && bSamePath ){
+		m_nMarkdownObservedRevision = nRevision;
+		return;	// 依頼済み
+	}
+	if( nRevision != m_nMarkdownObservedRevision ){
+		m_nMarkdownObservedRevision = nRevision;
+		return;	// 編集中。次のタイマーでまだ同じなら更新する
+	}
+	UpdateMarkdownPreview();
 }

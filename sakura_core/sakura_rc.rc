@@ -2688,6 +2688,7 @@ END
 STRINGTABLE
 BEGIN
     F_SHOWMINIMAP           "ミニマップの表示／非表示"
+    F_TOGGLE_MARKDOWN_PREVIEW "Markdownプレビューの表示／非表示"
     F_TYPE_LIST             "タイプ別設定一覧..."
     F_OPTION_TYPE           "タイプ別設定..."
     F_OPTION                "共通設定..."

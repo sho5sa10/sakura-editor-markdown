@@ -58,6 +58,21 @@
     <ClCompile Include="..\src\test\cpp\tests1\macro\test-macro.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdownlayout.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdownworker.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdownimageloader.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdownimagepath.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-md4cparser.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\test\cpp\tests1\view\test-color-strategy.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>

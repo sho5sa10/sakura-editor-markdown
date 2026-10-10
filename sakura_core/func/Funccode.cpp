@@ -373,6 +373,7 @@ const EFunctionCode pnFuncList_Set[] = {	//Oct. 16, 2000 JEPRO 変数名変更(L
 	F_SHOWTAB			,	/* タブの表示 */	//@@@ 2003.06.10 MIK
 	F_SHOWSTATUSBAR		,	/* ステータスバーの表示 */
 	F_SHOWMINIMAP		,	// ミニマップの表示
+	F_TOGGLE_MARKDOWN_PREVIEW	,	// Markdownプレビューの表示
 	F_TYPE_LIST			,	/* タイプ別設定一覧 */			//Sept. 17, 2000 JEPRO 設定系に入ってなかったので追加
 	F_OPTION_TYPE		,	/* タイプ別設定 */
 	F_OPTION			,	/* 共通設定 */
@@ -970,6 +971,8 @@ bool IsFuncEnable( const CEditDoc* pcEditDoc, const DLLSHAREDATA* pShareData, EF
 		return false;
 
 	switch( nId ){
+	case F_TOGGLE_MARKDOWN_PREVIEW:
+		return CEditWnd::getInstance()->IsMarkdownPreviewAvailable();
 	case F_RECKEYMACRO:	/* キーマクロの記録開始／終了 */
 		if( pShareData->m_sFlags.m_bRecordingKeyMacro ){	/* キーボードマクロの記録中 */
 			if( pShareData->m_sFlags.m_hwndRecordingKeyMacro == CEditWnd::getInstance()->GetHwnd() ){	/* キーボードマクロを記録中のウィンドウ */
@@ -1289,6 +1292,7 @@ bool IsFuncChecked( const CEditDoc* pcEditDoc, const DLLSHAREDATA* pShareData, E
 	case F_SHOWTAB:				return pCEditWnd->m_cTabWnd.GetHwnd() != nullptr;	//@@@ 2003.06.10 MIK
 	case F_SHOWSTATUSBAR:		return pCEditWnd->m_cStatusBar.GetStatusHwnd() != nullptr;
 	case F_SHOWMINIMAP:			return pCEditWnd->GetMiniMap().GetHwnd() != nullptr;
+	case F_TOGGLE_MARKDOWN_PREVIEW:	return pCEditWnd->IsMarkdownPreviewVisible();
 	// 2008.05.30 nasukoji	テキストの折り返し方法
 	case F_TMPWRAPNOWRAP:		return ( pcEditDoc->m_nTextWrapMethodCur == WRAP_NO_TEXT_WRAP );		// 折り返さない
 	case F_TMPWRAPSETTING:		return ( pcEditDoc->m_nTextWrapMethodCur == WRAP_SETTING_WIDTH );		// 指定桁で折り返す
