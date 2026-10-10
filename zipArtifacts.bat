@@ -194,6 +194,7 @@ mkdir %WORKDIR_EXE%
 mkdir %WORKDIR_EXE%\license\
 mkdir %WORKDIR_EXE%\license\bregonig\
 mkdir %WORKDIR_EXE%\license\ctags\
+mkdir %WORKDIR_EXE%\license\md4c\
 mkdir %WORKDIR_DEV%
 mkdir %WORKDIR_INST%
 copy /Y /B %platform%\%configuration%\sakura.exe %WORKDIR_EXE%\
@@ -212,6 +213,9 @@ set INSTALLER_RESOURCES_CTAGS=%~dp0installer\temp\ctags
 copy /Y /B %INSTALLER_RESOURCES_CTAGS%\ctags.exe    %WORKDIR_EXE%\
 copy /Y /B %INSTALLER_RESOURCES_CTAGS%\README.md    %WORKDIR_EXE%\license\ctags\
 copy /Y /B %INSTALLER_RESOURCES_CTAGS%\license\*.*  %WORKDIR_EXE%\license\ctags\
+
+: md4c
+copy /Y installer\externals\md4c\LICENSE.md      %WORKDIR_EXE%\license\md4c\
 
 copy /Y /B help\macro\macro.chm    %WORKDIR_EXE%\
 copy /Y /B help\plugin\plugin.chm  %WORKDIR_EXE%\

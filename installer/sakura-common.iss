@@ -240,6 +240,7 @@ Source: "sakura\bregonig.dll";         DestDir: "{app}";                  Compon
 Source: "sakura\license\bregonig\*";   DestDir: "{app}\license\bregonig"; Components: main
 Source: "sakura\ctags.exe";            DestDir: "{app}";                  Components: main
 Source: "sakura\license\ctags\*";      DestDir: "{app}\license\ctags";    Components: main
+Source: "sakura\license\md4c\*";       DestDir: "{app}\license\md4c";     Components: main
 Source: "sakura\sakura.exe.manifest.x";DestDir: "{app}";                  Components: main; DestName: "sakura.exe.manifest"; Check: isMultiUserDisabled; Flags: onlyifdoesntexist;
 Source: "sakura\sakura.exe.manifest.v";DestDir: "{app}";                  Components: main; DestName: "sakura.exe.manifest"; Check: isMultiUserEnabled; Flags: onlyifdoesntexist;
 Source: "sakura\sakura.chm";           DestDir: "{app}";                  Components: help

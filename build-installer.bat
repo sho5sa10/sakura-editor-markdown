@@ -41,6 +41,7 @@ mkdir %INSTALLER_WORK%
 mkdir %INSTALLER_WORK%\license\bregonig
 mkdir %INSTALLER_WORK%\keyword
 mkdir %INSTALLER_WORK%\license\ctags\
+mkdir %INSTALLER_WORK%\license\md4c
 
 set BREGONIG_DLL=bregonig.dll
 set BRON_ZIP=installer\externals\bregonig\bron420.zip
@@ -68,6 +69,7 @@ copy /Y %INSTALLER_RESOURCES_SINT%\sakura.exe.ini           %INSTALLER_WORK%\ > 
 copy /Y %INSTALLER_RESOURCES_SINT%\keyword\*.*              %INSTALLER_WORK%\keyword\ > NUL
 copy /Y %INSTALLER_RESOURCES_BRON%\*.txt                    %INSTALLER_WORK%\license\bregonig\ > NUL
 copy /Y %INSTALLER_RESOURCES_CTAGS%\license\*.*             %INSTALLER_WORK%\license\ctags\ > NUL
+copy /Y installer\externals\md4c\LICENSE.md                 %INSTALLER_WORK%\license\md4c\ > NUL
 
 copy /Y /B help\sakura\sakura.chm                           %INSTALLER_WORK%\ > NUL
 copy /Y /B help\plugin\plugin.chm                           %INSTALLER_WORK%\ > NUL
