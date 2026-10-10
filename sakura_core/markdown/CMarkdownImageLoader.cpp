@@ -155,7 +155,7 @@ bool Decode(HANDLE file, const CMarkdownImageLoader::Limits& limits, CMarkdownIm
 
 } // namespace
 
-CMarkdownImageLoader::Image CMarkdownImageLoader::LoadOnThisThread(const ImageLocation& location, const Limits& limits)
+CMarkdownImageLoader::Image CMarkdownImageLoader::Load(const ImageLocation& location, const Limits& limits)
 {
 	Image image;
 	image.path = location.path;
@@ -204,22 +204,6 @@ CMarkdownImageLoader::Image CMarkdownImageLoader::LoadOnThisThread(const ImageLo
 	return image;
 }
 
-CMarkdownImageLoader::Image CMarkdownImageLoader::Load(const ImageLocation& location, const Limits& limits)
-{
-	// COMの初期化と終了を、呼び出したスレッドでは行わない(呼び出し側のスレッドのCOMの状態に影響しないようにする)
-	Image image;
-	image.path = location.path;
-	try {
-		std::thread worker([&] { image = LoadOnThisThread(location, limits); });
-		worker.join();
-	}
-	catch (...) {
-		image = Image{};
-		image.path = location.path;
-	}
-	return image;
-}
-
 struct CMarkdownImageLoader::State {
 	Limits						limits;
 	std::mutex					mutex;
@@ -244,7 +228,7 @@ void CMarkdownImageLoader::State::Run()
 			location = std::move(queue.front());
 			queue.pop_front();
 		}
-		Image image = LoadOnThisThread(location, limits);
+		Image image = Load(location, limits);
 		bool first = false;
 		{
 			std::lock_guard<std::mutex> lock(mutex);
