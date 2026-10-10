@@ -1,0 +1,9 @@
+md4c provides CMake targets:
+
+  find_package(md4c CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE md4c::md4c)
+
+This is the UTF-16 build. Define MD4C_USE_UTF16 before including md4c.h:
+
+  #define MD4C_USE_UTF16
+  #include <md4c.h>

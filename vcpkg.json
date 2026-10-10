@@ -8,6 +8,7 @@
       "platform": "static"
     },
     "dll-plugin1",
+    "md4c",
     {
       "name": "gtest",
       "platform": "static"

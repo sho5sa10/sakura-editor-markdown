@@ -297,6 +297,9 @@ add_custom_target(generate_sakura_exe_manifest
 # Resolve darkmodelib from vcpkg local registry
 find_package(darkmodelib CONFIG REQUIRED)
 
+# Resolve md4c (Markdown parser, UTF-16 build) from vcpkg local registry
+find_package(md4c CONFIG REQUIRED)
+
 # Resolve bregonig from vcpkg local registry
 find_package(bregonig CONFIG REQUIRED)
 
@@ -580,6 +583,7 @@ target_link_directories(sakura_core
 target_link_libraries(sakura_core
   PUBLIC
     darkmodelib::darkmodelib
+    md4c::md4c
     comctl32
     dbghelp
     dwmapi
