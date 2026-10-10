@@ -330,6 +330,16 @@ TEST_F(CSakuraEnvironmentTest, GetDlgInitialDir001)
  */
 TEST_F(CSakuraEnvironmentTest, ResolvePath001)
 {
+	// このテストはCOM(IShellLink)を使う。COMの初期化を、ほかのテストが残した状態に頼らない。
+	// (CZipFileのテストがOleInitializeしたあと、シェルのスレッドがMTAを保持している約30秒の間だけ、
+	// このスレッドが暗黙のMTAになってCOMを使えていた。その時間を過ぎると、CO_E_NOTINITIALIZEDで失敗する)
+	// 本体と同じSTAで初期化する。すでに別の方式で初期化済み(RPC_E_CHANGED_MODE)ならCOMは使えるので、そのまま進む。
+	struct ScopedComInit {
+		HRESULT hr = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+		~ScopedComInit() { if (SUCCEEDED(hr)) ::CoUninitialize(); }
+	} comInit;
+	ASSERT_TRUE(SUCCEEDED(comInit.hr) || comInit.hr == RPC_E_CHANGED_MODE) << "CoInitializeEx failed. hr=0x" << std::hex << comInit.hr;
+
 	// ショートカットのターゲットとなるファイルを作成する
 	const auto target = GetTempFilePathWithExt(L"lnk", L"txt");
 	std::wofstream fs(target);
