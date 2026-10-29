@@ -41,7 +41,7 @@ if(NOT VSWHERE)
 endif()
 
 execute_process(
-  COMMAND "${VSWHERE}" -latest -find "Common7/Tools/VsDevCmd.bat"
+  COMMAND "${VSWHERE}" -latest -products * -find "Common7/Tools/VsDevCmd.bat"
   OUTPUT_VARIABLE VSDEVCMD_PATH
   OUTPUT_STRIP_TRAILING_WHITESPACE
   RESULT_VARIABLE VSWHERE_RESULT
@@ -59,6 +59,12 @@ set(BUILD_DIR_DBG "${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg")
 file(REMOVE_RECURSE "${BUILD_DIR_REL}" "${BUILD_DIR_DBG}")
 file(COPY "${CMIGEMO_SOURCE_DIR}/" DESTINATION "${BUILD_DIR_REL}")
 file(COPY "${CMIGEMO_SOURCE_DIR}/" DESTINATION "${BUILD_DIR_DBG}")
+
+# migemo.rc includes afxres.h (MFC), which is missing on Build Tools without the ATL/MFC component.
+# It only needs the standard resource definitions, so redirect it to winres.h.
+foreach(_dir IN ITEMS "${BUILD_DIR_REL}" "${BUILD_DIR_DBG}")
+  file(WRITE "${_dir}/src/afxres.h" "#include <winres.h>\n")
+endforeach()
 
 file(WRITE "${BUILD_DIR_REL}/build_rel.cmd"
   "@echo off\n"

@@ -33,7 +33,7 @@ set(VCPKG_POLICY_DLLS_WITHOUT_LIBS enabled)
 set(VCPKG_POLICY_DLLS_IN_STATIC_LIBRARY enabled)
 
 execute_process(
-  COMMAND "${VSWHERE}" -latest -find "Common7/Tools/VsDevCmd.bat"
+  COMMAND "${VSWHERE}" -latest -products * -find "Common7/Tools/VsDevCmd.bat"
   OUTPUT_VARIABLE VSDEVCMD_PATH
   OUTPUT_STRIP_TRAILING_WHITESPACE
   RESULT_VARIABLE VSWHERE_RESULT

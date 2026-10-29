@@ -99,7 +99,7 @@ if($ENV{VisualStudioVersion})
 elseif(CMD_VSWHERE)
   # Use vswhere to get Visual Studio version
   execute_process(
-    COMMAND ${CMD_VSWHERE} -latest -property installationVersion
+    COMMAND ${CMD_VSWHERE} -latest -products * -property installationVersion
     OUTPUT_VARIABLE VISUAL_STUDIO_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
@@ -112,7 +112,7 @@ if(VISUAL_STUDIO_VERSION)
 
   # Use vswhere to find VsDevCmd.bat
   execute_process(
-    COMMAND ${CMD_VSWHERE} -find "Common7\\Tools\\VsDevCmd.bat" -version "${VS_VERSION}"
+    COMMAND ${CMD_VSWHERE} -products * -find "Common7\\Tools\\VsDevCmd.bat" -version "${VS_VERSION}"
     OUTPUT_VARIABLE CMD_VS_DEV
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
@@ -129,6 +129,7 @@ endif(VISUAL_STUDIO_VERSION)
 find_program(GIT_EXECUTABLE git
   PATHS
     "$ENV{ProgramFiles}/Git"
+    "$ENV{ProgramW6432}/Git"
   PATH_SUFFIXES
     cmd
     bin
@@ -144,6 +145,7 @@ message(STATUS "Found Git: ${GIT_EXECUTABLE}")
 find_program(PATCH_EXECUTABLE patch
   PATHS
     "$ENV{ProgramFiles}/Git/usr/bin"
+    "$ENV{ProgramW6432}/Git/usr/bin"
     "$ENV{LOCALAPPDATA}/Programs/Git/usr/bin"
   NO_DEFAULT_PATH
   DOC "patch.exe command from Git"
@@ -160,6 +162,7 @@ find_program(CMD_PWSH pwsh.exe
   PATHS
     "$ENV{LOCALAPPDATA}/Microsoft/WindowsApps"
     "$ENV{ProgramFiles}/PowerShell/7"
+    "$ENV{ProgramW6432}/PowerShell/7"
   DOC "PowerShell Core"
 )
 
@@ -197,6 +200,7 @@ message(STATUS "Found Python Stable ABI DLL: ${Python3_STABLE_ABI_DLL}")
 find_program(7ZIP_EXECUTABLE 7z
   PATHS
     "$ENV{ProgramFiles}/7-zip"
+    "$ENV{ProgramW6432}/7-zip"
     "$ENV{ChocolateyInstall}/bin"
 )
 
