@@ -14,6 +14,8 @@
 
 #include "doc/CDocTypeSetting.h" // ColorInfo !!
 #include "CShareData.h"
+#include "env/CDocTypeManager.h"
+#include "types/CType.h"
 #include "util/string_ex2.h"
 #include "util/window.h"
 #include "view/CEditView.h" // SColorStrategyInfo
@@ -1347,6 +1349,12 @@ void CShareData_IO::ShareData_IO_Types( CDataProfile& cProfile )
 			pShare->m_TypeMini[i].m_encoding = type.m_encoding;
 		}
 	}
+	// Markdownのタイプ別設定がなかった版の設定には、一度だけMarkdownを追加する
+	bool bMarkdownTypeAdded = true;
+	if( !cProfile.IOProfileData( L"Other", L"bMarkdownTypeAdded", bMarkdownTypeAdded ) && cProfile.IsReadingMode() ){
+		AppendMarkdownTypeIfMissing( types, *pShare );
+	}
+
 	if( cProfile.IsReadingMode() ){
 		// Id重複チェック、更新
 		for( i = 0; i < pShare->m_nTypesCount - 1; i++ ){
@@ -1360,6 +1368,34 @@ void CShareData_IO::ShareData_IO_Types( CDataProfile& cProfile )
 			}
 		}
 	}
+}
+
+bool AppendMarkdownTypeIfMissing(
+	std::vector<STypeConfig*>&	types,
+	DLLSHAREDATA&				share
+)
+{
+	const int nCount = int(types.size());
+	if( MAX_TYPES <= nCount ){
+		return false;
+	}
+	for( const STypeConfig* type : types ){
+		if( CDocTypeManager::IsFileNameMatch( type->m_szTypeExts, L"a.md" ) ){
+			return false;
+		}
+	}
+
+	auto* type = new STypeConfig();
+	CType_Markdown().InitTypeConfig( nCount, *type );
+	types.push_back( type );
+
+	auto& mini = share.m_TypeMini[nCount];
+	wcscpy( mini.m_szTypeExts, type->m_szTypeExts );
+	wcscpy( mini.m_szTypeName, type->m_szTypeName );
+	mini.m_id = type->m_id;
+	mini.m_encoding = type->m_encoding;
+	share.m_nTypesCount = nCount + 1;
+	return true;
 }
 
 /*!

@@ -9,6 +9,7 @@
 
 #include "env/CShareData_IO.h"
 #include "env/DLLSHAREDATA.h"
+#include "types/CType.h"
 #include "uiparts/CMenuDrawer.h"
 
 #include <Shlwapi.h>
@@ -818,6 +819,146 @@ TEST(ShareData_IO, ShareData_IO_2)
 	std::error_code ec;
 	std::filesystem::remove(bakPath, ec);
 	std::filesystem::remove(iniPath, ec);
+}
+
+namespace {
+
+//! 指定の拡張子のタイプ別設定を並べる
+std::vector<STypeConfig*> MakeTypes(std::initializer_list<const wchar_t*> exts)
+{
+	std::vector<STypeConfig*> types;
+	for (const auto* ext : exts) {
+		auto* type = new STypeConfig();
+		wcscpy_s(type->m_szTypeExts, ext);
+		types.push_back(type);
+	}
+	return types;
+}
+
+void DeleteTypes(std::vector<STypeConfig*>& types)
+{
+	for (auto* type : types) delete type;
+	types.clear();
+}
+
+/*!
+ * @brief 古い版のINIファイル(Markdownのタイプ別設定がない)を書き出す
+ */
+void WriteIniWithoutMarkdownType(const std::filesystem::path& iniPath, bool bMarkdownTypeAdded)
+{
+	std::ofstream fos{ iniPath };
+	fos << "[Other]" << std::endl;
+	fos << "nTypesCount=17" << std::endl;
+	if (bMarkdownTypeAdded) {
+		fos << "bMarkdownTypeAdded=1" << std::endl;
+	}
+}
+
+} // namespace
+
+/*!
+ * @brief AppendMarkdownTypeIfMissingのテスト
+ *
+ * Markdownのタイプ別設定を末尾に追加し、共有データの概要も更新する
+ */
+TEST(ShareData_IO, AppendMarkdownTypeIfMissing001)
+{
+	env::ShareDataTestSuite::SetUpShareData();
+	auto& share = GetDllShareData();
+
+	auto types = MakeTypes({ L"", L"txt", L"c,cpp" });
+	share.m_nTypesCount = 3;
+
+	EXPECT_THAT(AppendMarkdownTypeIfMissing(types, share), IsTrue());
+
+	ASSERT_THAT(types.size(), Eq(4));
+	EXPECT_THAT(types[3]->m_szTypeName, StrEq(L"Markdown"));
+	EXPECT_THAT(types[3]->m_nIdx, Eq(3));
+	EXPECT_THAT(share.m_nTypesCount, Eq(4));
+	EXPECT_THAT(share.m_TypeMini[3].m_szTypeName, StrEq(L"Markdown"));
+	EXPECT_THAT(share.m_TypeMini[3].m_szTypeExts, StrEq(L"md,markdown,mdown,mkd"));
+	EXPECT_THAT(share.m_TypeMini[3].m_id, Eq(types[3]->m_id));
+
+	DeleteTypes(types);
+	env::ShareDataTestSuite::TearDownShareData();
+}
+
+/*!
+ * @brief AppendMarkdownTypeIfMissingのテスト
+ *
+ * 利用者がmdを自分のタイプ別設定に割り当てているときは、追加しない
+ */
+TEST(ShareData_IO, AppendMarkdownTypeIfMissing002)
+{
+	env::ShareDataTestSuite::SetUpShareData();
+	auto& share = GetDllShareData();
+
+	auto types = MakeTypes({ L"", L"txt,MD" });
+	share.m_nTypesCount = 2;
+
+	EXPECT_THAT(AppendMarkdownTypeIfMissing(types, share), IsFalse());
+	EXPECT_THAT(types.size(), Eq(2));
+	EXPECT_THAT(share.m_nTypesCount, Eq(2));
+
+	DeleteTypes(types);
+	env::ShareDataTestSuite::TearDownShareData();
+}
+
+/*!
+ * @brief AppendMarkdownTypeIfMissingのテスト
+ *
+ * タイプ別設定に空きがないときは、追加しない
+ */
+TEST(ShareData_IO, AppendMarkdownTypeIfMissing003)
+{
+	env::ShareDataTestSuite::SetUpShareData();
+	auto& share = GetDllShareData();
+
+	std::vector<STypeConfig*> types;
+	for (int i = 0; i < MAX_TYPES; ++i) {
+		types.push_back(new STypeConfig());
+	}
+	share.m_nTypesCount = MAX_TYPES;
+
+	EXPECT_THAT(AppendMarkdownTypeIfMissing(types, share), IsFalse());
+	EXPECT_THAT(types.size(), Eq(size_t(MAX_TYPES)));
+	EXPECT_THAT(share.m_nTypesCount, Eq(int(MAX_TYPES)));
+
+	DeleteTypes(types);
+	env::ShareDataTestSuite::TearDownShareData();
+}
+
+/*!
+ * @brief ShareData_IO_Typesのテスト
+ *
+ * Markdownのタイプ別設定がない版のINIファイルを読むと、Markdownが追加される。
+ * 一度追加した印(bMarkdownTypeAdded)があるときは、追加しない(利用者が削除したものを戻さない)
+ */
+TEST(ShareData_IO, ShareData_IO_Types_AddsMarkdownTypeToOldIni)
+{
+	const auto iniPath = GetIniFileName();
+	const auto bakPath = std::filesystem::path{ iniPath.native() + L".bak" };
+
+	for (const bool bMarkdownTypeAdded : { false, true }) {
+		WriteIniWithoutMarkdownType(iniPath, bMarkdownTypeAdded);
+
+		env::ShareDataTestSuite::SetUpShareData();
+		CShareData_IO::LoadShareData();
+
+		const auto& share = GetDllShareData();
+		if (bMarkdownTypeAdded) {
+			EXPECT_THAT(share.m_nTypesCount, Eq(17));
+		} else {
+			EXPECT_THAT(share.m_nTypesCount, Eq(18));
+			EXPECT_THAT(share.m_TypeMini[17].m_szTypeName, StrEq(L"Markdown"));
+		}
+
+		env::ShareDataTestSuite::TearDownShareData();
+
+		std::error_code ec;
+		std::filesystem::remove(bakPath, ec);
+		std::filesystem::remove(iniPath, ec);
+	}
 }
 
 /*!

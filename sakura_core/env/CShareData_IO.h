@@ -13,6 +13,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 class CBlockComment;
 class CDataProfile;
@@ -25,6 +26,7 @@ struct CommonSetting_Macro;
 struct CommonSetting_Plugin;
 struct CommonSetting_View;
 struct ColorInfo; // defined doc/CDocTypeSetting.h
+struct DLLSHAREDATA;
 struct PRINTSETTING;
 struct SFileTree;
 struct SFileTreeItem;
@@ -79,6 +81,23 @@ void ShareData_IO_ColorSet(
 	CDataProfile&			cProfile,
 	std::wstring_view		sectionName,	//!< [in] セクション名
 	std::span<ColorInfo>	tEntryValues	//!< [in,out] エントリ値
+);
+
+/*!
+	@brief Markdownのタイプ別設定を、タイプ別設定の末尾に追加する
+
+	Markdownのタイプ別設定がなかった版の設定ファイルを読んだときに使う。
+	すでにMarkdownの拡張子(md)に一致するタイプ別設定があるとき(利用者が自分で設定したもの)と、
+	タイプ別設定に空きがないときは、何もしない。
+
+	@param[in,out]	types	タイプ別設定
+	@param[in,out]	share	共有データ(タイプ別設定の数と、概要の配列を更新する)
+	@retval true	追加した
+	@retval false	追加しなかった
+*/
+bool AppendMarkdownTypeIfMissing(
+	std::vector<STypeConfig*>&	types,
+	DLLSHAREDATA&				share
 );
 
 void ShareData_IO_FileTree(
