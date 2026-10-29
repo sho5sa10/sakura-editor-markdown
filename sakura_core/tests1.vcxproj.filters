@@ -70,6 +70,12 @@
     <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdownimagepath.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdownheadingscanner.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdowntype.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\test\cpp\tests1\markdown\test-md4cparser.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>

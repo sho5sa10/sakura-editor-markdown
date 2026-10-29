@@ -88,6 +88,7 @@ enum eOutlineNativeNamesId{
 	STR2_OUTLINE_XML = 0,
 	STR2_OUTLINE_C,
 	STR2_OUTLINE_CPP,
+	STR2_OUTLINE_MARKDOWN,
 	STR2_OUTLINE_MAX
 };
 
@@ -95,6 +96,7 @@ const WCHAR* pszOutlineNames[] = {
 	L"XML",
 	L"C",
 	L"C++",
+	L"Markdown",
 };
 
 //アウトライン解析方法・標準ルール
@@ -114,6 +116,7 @@ TYPE_NAME_ID<EOutlineType> OlmArr[] = {
 	{ OUTLINE_HTML,		STR_OUTLINE_HTML },			// 2003.05.20 zenryaku
 	{ OUTLINE_XML,		STR2_OUTLINE_XML },			// 2014.12.25 Moca
 	{ OUTLINE_TEX,		STR_OUTLINE_TEX },		// 2003.07.20 naoh
+	{ OUTLINE_MARKDOWN,	STR2_OUTLINE_MARKDOWN },
 	{ OUTLINE_TEXT,		STR_OUTLINE_TEXT }		//Jul. 08, 2001 JEPRO 常に最後尾におく
 };
 

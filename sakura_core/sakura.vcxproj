@@ -344,6 +344,7 @@
     <ClInclude Include="..\sakura_core\markdown\CMarkdownPreviewWorker.h" />
     <ClInclude Include="..\sakura_core\markdown\CMarkdownImageLoader.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownImagePath.h" />
+    <ClInclude Include="..\sakura_core\markdown\MarkdownHeadingScanner.h" />
     <ClInclude Include="..\sakura_core\markdown\IMarkdownParser.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownLayout.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownModel.h" />
@@ -725,6 +726,7 @@
     <ClCompile Include="..\sakura_core\markdown\CMarkdownPreviewWorker.cpp" />
     <ClCompile Include="..\sakura_core\markdown\CMarkdownImageLoader.cpp" />
     <ClCompile Include="..\sakura_core\markdown\MarkdownImagePath.cpp" />
+    <ClCompile Include="..\sakura_core\markdown\MarkdownHeadingScanner.cpp" />
     <ClCompile Include="..\sakura_core\markdown\MarkdownLayout.cpp" />
     <ClCompile Include="..\sakura_core\markdown\Md4cParser.cpp" />
     <ClCompile Include="..\sakura_core\mem\CMemory.cpp" />
@@ -809,6 +811,7 @@
     <ClCompile Include="..\sakura_core\types\CType_Erlang.cpp" />
     <ClCompile Include="..\sakura_core\types\CType_Html.cpp" />
     <ClCompile Include="..\sakura_core\types\CType_Ini.cpp" />
+    <ClCompile Include="..\sakura_core\types\CType_Markdown.cpp" />
     <ClCompile Include="..\sakura_core\types\CType_Java.cpp" />
     <ClCompile Include="..\sakura_core\types\CType_Others.cpp" />
     <ClCompile Include="..\sakura_core\types\CType_Pascal.cpp" />

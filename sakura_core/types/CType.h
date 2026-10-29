@@ -44,6 +44,7 @@ enum EOutlineType{
 	OUTLINE_ERLANG,		//	2009.08.10 genta Erlangアウトライン解析
 	OUTLINE_XML,		//  2014.12.25 Moca
 	OUTLINE_CPP,		//  2015.11.13 Moca
+	OUTLINE_MARKDOWN,	//	Markdownアウトライン解析
 	//	新しいアウトライン解析は必ずこの直前へ挿入
 	OUTLINE_CODEMAX,
 	OUTLINE_BOOKMARK,	//	2001.12.03 hor
@@ -319,6 +320,7 @@ GEN_CTYPE(CType_Dos)
 GEN_CTYPE(CType_Html)
 GEN_CTYPE(CType_Ini)
 GEN_CTYPE(CType_Java)
+GEN_CTYPE(CType_Markdown)
 GEN_CTYPE(CType_Pascal)
 GEN_CTYPE(CType_Perl)
 GEN_CTYPE(CType_Python)

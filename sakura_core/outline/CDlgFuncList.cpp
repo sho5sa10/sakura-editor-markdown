@@ -486,6 +486,11 @@ void CDlgFuncList::SetData()
 		SetTree(hInsertAfter);
 		::SetWindowText( GetHwnd(), L"XML" );
 	}
+	else if( OUTLINE_MARKDOWN == m_nListType ){ // Markdownの見出しツリー
+		m_nViewType = VIEWTYPE_TREE;
+		SetTree(hInsertAfter);
+		::SetWindowText( GetHwnd(), L"Markdown" );
+	}
 	else if ( OUTLINE_FILETREE == m_nListType ){
 		m_nViewType = VIEWTYPE_TREE;
 		SetTreeFile();

@@ -1159,6 +1159,9 @@
     <ClInclude Include="..\sakura_core\markdown\MarkdownImagePath.h">
       <Filter>Cpp Source Files\markdown</Filter>
     </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\MarkdownHeadingScanner.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
     <ClInclude Include="..\sakura_core\markdown\IMarkdownParser.h">
       <Filter>Cpp Source Files\markdown</Filter>
     </ClInclude>
@@ -1664,6 +1667,9 @@
       <Filter>Cpp Source Files\types</Filter>
     </ClCompile>
     <ClCompile Include="..\sakura_core\types\CType_Ini.cpp">
+      <Filter>Cpp Source Files\types</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\types\CType_Markdown.cpp">
       <Filter>Cpp Source Files\types</Filter>
     </ClCompile>
     <ClCompile Include="..\sakura_core\types\CType_Java.cpp">
@@ -2387,6 +2393,9 @@
       <Filter>Cpp Source Files\markdown</Filter>
     </ClCompile>
     <ClCompile Include="..\sakura_core\markdown\MarkdownImagePath.cpp">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\markdown\MarkdownHeadingScanner.cpp">
       <Filter>Cpp Source Files\markdown</Filter>
     </ClCompile>
     <ClCompile Include="..\sakura_core\markdown\MarkdownLayout.cpp">

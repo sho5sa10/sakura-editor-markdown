@@ -12,8 +12,21 @@
 | `MarkdownText.h` | UTF-16 の文字判定(東アジアの文字、禁則処理) | 標準ライブラリのみ |
 | `MarkdownLayout.{h,cpp}` | 折り返しと配置。文字の幅は `ITextMeasurer` から取る | モデル |
 | `CMarkdownPreviewWnd.{h,cpp}` | 子ウィンドウ。レイアウトの結果を GDI で描き、スクロールを処理する | Win32 |
+| `MarkdownHeadingScanner.{h,cpp}` | 1行ずつ受け取り、見出しを見つける(アウトライン解析用) | 標準ライブラリのみ |
 
 エディタ本体との接点は `CEditWnd`(`ToggleMarkdownPreview` など)だけです。
+
+## 色分けとアウトライン
+
+タイプ別設定「Markdown」(`types/CType_Markdown.cpp`)で、編集画面に色を付けます。拡張子は md、markdown、mdown、mkd です。
+
+- 見出し、太字、斜体、取り消し線、インラインコード、リンク、引用、リストの記号、区切り線、表、HTML に、
+  正規表現キーワード1～10で色を付けます。配色は VS Code の Light+ テーマを参考にしています。
+- フェンスで囲んだコードブロック(```` ``` ```` と `~~~`)は、ブロックコメントとして色を付けます(色は「コメント」)。
+- アウトライン解析(`OUTLINE_MARKDOWN`)は、見出しのレベルで階層にします。
+  コードブロック、先頭の YAML front matter、HTML のコメントの中は見出しにしません。
+- 正規表現キーワードは1行ずつ調べるので、行をまたぐ強調には色が付きません。
+  また、プレビュー(md4c)と違って CommonMark の規則を簡略化しているため、細かいところで結果が異なることがあります。
 パーサーは `IMarkdownParser` を介して使うので、別のパーサーに交換するときは、
 `MarkdownModel.h` のモデルを作る実装を用意すれば、描画側は変更不要です。
 
