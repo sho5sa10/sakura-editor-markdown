@@ -9,6 +9,7 @@
 
 #include "view/colors/CColor_Comment.h"
 #include "view/colors/CColor_Heredoc.h"
+#include "view/colors/CColor_MarkdownFence.h"
 #include "view/colors/CColor_Numeric.h"
 #include "view/colors/CColor_Quote.h"
 #include "view/colors/CColor_Url.h"
@@ -60,6 +61,7 @@ struct ColorStrategyTest : public ::testing::Test, public window::EditorTestSuit
 		m_lineComment = type.m_cLineComment;
 		m_blockComments[0] = type.m_cBlockComments[0];
 		m_blockComments[1] = type.m_cBlockComments[1];
+		m_markdownCodeBlock = type.m_bMarkdownCodeBlock;
 	}
 
 	void TearDown() override
@@ -78,6 +80,7 @@ struct ColorStrategyTest : public ::testing::Test, public window::EditorTestSuit
 		type.m_cLineComment = m_lineComment;
 		type.m_cBlockComments[0] = m_blockComments[0];
 		type.m_cBlockComments[1] = m_blockComments[1];
+		type.m_bMarkdownCodeBlock = m_markdownCodeBlock;
 	}
 
 	STypeConfig& GetTypeConfig()
@@ -98,6 +101,7 @@ private:
 	int m_heredocType = HEREDOC_PHP;
 	CLineComment m_lineComment;
 	CBlockComment m_blockComments[2];
+	bool m_markdownCodeBlock = false;
 };
 
 TEST_F(ColorStrategyTest, NumericProperties)
@@ -708,6 +712,125 @@ TEST_F(ColorStrategyTest, HeredocCarriesStateAcrossLinesAndRecognizesTerminators
 	expectEndPosition(L"ID\n", 2);
 	expectEndPosition(L"ID;\n", 2);
 	expectEndPosition(L"IDsuffix\n", 9);
+}
+
+TEST_F(ColorStrategyTest, MarkdownFenceProperties)
+{
+	auto& type = GetTypeConfig();
+	type.m_bMarkdownCodeBlock = true;
+	type.m_ColorInfoArr[COLORIDX_COMMENT].m_bDisp = true;
+
+	CColor_MarkdownFence strategy;
+	strategy.Update();
+
+	EXPECT_THAT(strategy.GetStrategyColor(), Eq(COLORIDX_MARKDOWN_FENCE));
+	EXPECT_THAT(strategy.GetDrawColor(), Eq(COLORIDX_MARKDOWN_FENCE));
+	EXPECT_THAT(ToColorInfoArrIndex(COLORIDX_MARKDOWN_FENCE), Eq(COLORIDX_COMMENT));
+	EXPECT_THAT(strategy.Disp(), IsTrue());
+
+	type.m_ColorInfoArr[COLORIDX_COMMENT].m_bDisp = false;
+	EXPECT_THAT(strategy.Disp(), IsFalse());
+
+	type.m_ColorInfoArr[COLORIDX_COMMENT].m_bDisp = true;
+	type.m_bMarkdownCodeBlock = false;
+	EXPECT_THAT(strategy.Disp(), IsFalse());
+
+	EXPECT_THAT(CColor_MarkdownFence::ToColorIndex(markdown::ECodeTokenKind::Keyword), Eq(COLORIDX_KEYWORD1));
+	EXPECT_THAT(CColor_MarkdownFence::ToColorIndex(markdown::ECodeTokenKind::String), Eq(COLORIDX_KEYWORD2));
+	EXPECT_THAT(CColor_MarkdownFence::ToColorIndex(markdown::ECodeTokenKind::Comment), Eq(COLORIDX_KEYWORD3));
+	EXPECT_THAT(CColor_MarkdownFence::ToColorIndex(markdown::ECodeTokenKind::Deleted), Eq(COLORIDX_KEYWORD10));
+}
+
+TEST_F(ColorStrategyTest, MarkdownFenceBeginsOnlyAtFenceLines)
+{
+	GetTypeConfig().m_bMarkdownCodeBlock = true;
+	CColor_MarkdownFence strategy;
+	strategy.Update();
+
+	const std::array fences = {
+		L"```\n"sv,
+		L"```bash\r\n"sv,
+		L"    ~~~ python\n"sv,
+		L"````"sv,
+	};
+	for (const auto fence : fences) {
+		SCOPED_TRACE(testing::Message() << "fence length=" << fence.size());
+		const CStringRef line(fence.data(), static_cast<int>(fence.size()));
+		EXPECT_THAT(strategy.BeginColor(line, 0), IsTrue());
+		// 開きのフェンスの行では終わらない
+		EXPECT_THAT(strategy.EndColor(line, static_cast<int>(fence.size()) - 1), IsFalse());
+	}
+
+	const std::array notFences = {
+		L"``\n"sv,
+		L"``` a`b\n"sv,
+		L"text ```\n"sv,
+		L"~~\n"sv,
+	};
+	for (const auto text : notFences) {
+		SCOPED_TRACE(testing::Message() << "text length=" << text.size());
+		const CStringRef line(text.data(), static_cast<int>(text.size()));
+		EXPECT_THAT(strategy.BeginColor(line, 0), IsFalse());
+	}
+
+	const CStringRef fence{ L"```\n", 4 };
+	EXPECT_THAT(strategy.BeginColor(fence, 1), IsFalse());
+	EXPECT_THAT(strategy.BeginColor(CStringRef(), 0), IsFalse());
+}
+
+TEST_F(ColorStrategyTest, MarkdownFenceColorsTokensAndEndsAtClosingFence)
+{
+	GetTypeConfig().m_bMarkdownCodeBlock = true;
+	CColor_MarkdownFence opener;
+	opener.Update();
+	const CStringRef openLine{ L"````bash\n", 9 };
+	ASSERT_THAT(opener.BeginColor(openLine, 0), IsTrue());
+	// フェンスの行は字句に分けない
+	EXPECT_THAT(opener.UpdateDrawColor(openLine, 4), IsFalse());
+	EXPECT_THAT(opener.GetDrawColor(), Eq(COLORIDX_MARKDOWN_FENCE));
+	std::unique_ptr<CLayoutColorInfo> colorInfo(opener.GetStrategyColorInfo());
+	ASSERT_THAT(colorInfo.get(), NotNull());
+
+	// 次の行は、引き継いだ言語(bash)で色を付ける
+	CColor_MarkdownFence strategy;
+	strategy.Update();
+	strategy.SetStrategyColorInfo(colorInfo.get());
+	strategy.InitStrategyStatus();
+	const std::wstring_view code = L"echo 1 # c\n";
+	const CStringRef codeLine(code.data(), static_cast<int>(code.size()));
+	EXPECT_THAT(strategy.EndColor(codeLine, 0), IsFalse());
+	EXPECT_THAT(strategy.UpdateDrawColor(codeLine, 0), IsTrue());
+	EXPECT_THAT(strategy.GetDrawColor(), Eq(COLORIDX_KEYWORD6));	// echo: コマンド名
+	EXPECT_THAT(strategy.UpdateDrawColor(codeLine, 1), IsFalse());
+	EXPECT_THAT(strategy.UpdateDrawColor(codeLine, 4), IsTrue());
+	EXPECT_THAT(strategy.GetDrawColor(), Eq(COLORIDX_MARKDOWN_FENCE));
+	EXPECT_THAT(strategy.UpdateDrawColor(codeLine, 5), IsTrue());
+	EXPECT_THAT(strategy.GetDrawColor(), Eq(COLORIDX_KEYWORD4));	// 1: 数値
+	EXPECT_THAT(strategy.UpdateDrawColor(codeLine, 7), IsTrue());
+	EXPECT_THAT(strategy.GetDrawColor(), Eq(COLORIDX_KEYWORD3));	// # c: コメント
+	EXPECT_THAT(strategy.UpdateDrawColor(codeLine, 10), IsTrue());	// 改行はコードブロックの色
+	EXPECT_THAT(strategy.GetDrawColor(), Eq(COLORIDX_MARKDOWN_FENCE));
+	EXPECT_THAT(strategy.EndColor(codeLine, 10), IsFalse());
+
+	// 開いたときより短いフェンスでは閉じない
+	strategy.InitStrategyStatus();
+	const CStringRef shortFence{ L"```\n", 4 };
+	EXPECT_THAT(strategy.EndColor(shortFence, 0), IsFalse());
+	EXPECT_THAT(strategy.EndColor(shortFence, 3), IsFalse());
+
+	// 同じ長さ以上のフェンスで、改行の前で閉じる
+	strategy.InitStrategyStatus();
+	const CStringRef closeLine{ L"  ````` \r\n", 10 };
+	EXPECT_THAT(strategy.EndColor(closeLine, 0), IsFalse());
+	EXPECT_THAT(strategy.UpdateDrawColor(closeLine, 2), IsFalse());
+	EXPECT_THAT(strategy.EndColor(closeLine, 7), IsFalse());
+	EXPECT_THAT(strategy.EndColor(closeLine, 8), IsTrue());
+
+	// 違う文字のフェンスでは閉じない
+	strategy.InitStrategyStatus();
+	const CStringRef tildeFence{ L"~~~~\n", 5 };
+	EXPECT_THAT(strategy.EndColor(tildeFence, 0), IsFalse());
+	EXPECT_THAT(strategy.EndColor(tildeFence, 4), IsFalse());
 }
 
 } // namespace view::color

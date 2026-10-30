@@ -18,6 +18,7 @@
 #include "CColor_KeywordSet.h"
 #include "CColor_Found.h"
 #include "CColor_Heredoc.h"
+#include "CColor_MarkdownFence.h"
 #include "doc/layout/CLayout.h"
 #include "window/CEditWnd.h"
 #include "types/CTypeSupport.h"
@@ -90,6 +91,11 @@ bool SColorStrategyInfo::CheckChangeColor(const CStringRef& cLineStr)
 		}
 	}
 
+	//範囲の途中の色の切り替え(Markdownのコードブロックの中の字句)
+	if(m_pStrategy && m_pStrategy->UpdateDrawColor(cLineStr,this->GetPosInLogic())){
+		bChange = true;
+	}
+
 	//カーソル行背景色
 	CTypeSupport cCaretLineBg(m_pcView, COLORIDX_CARETLINEBG);
 	if( cCaretLineBg.IsDisp() && !m_pcView->m_bMiniMap ){
@@ -154,13 +160,13 @@ void SColorStrategyInfo::DoChangeColor(CColor3Setting *pcColor)
 	}else if(m_pStrategyFound){
 		m_cIndex.eColorIndex = m_pStrategyFound->GetStrategyColor();
 	}else{
-		m_cIndex.eColorIndex = CColorStrategy::GetStrategyColorSafe(m_pStrategy);
+		m_cIndex.eColorIndex = CColorStrategy::GetDrawColorSafe(m_pStrategy);
 	}
 
 	if(m_pStrategyFound){
 		m_cIndex.eColorIndex2 = m_pStrategyFound->GetStrategyColor();
 	}else{
-		m_cIndex.eColorIndex2 = CColorStrategy::GetStrategyColorSafe(m_pStrategy);
+		m_cIndex.eColorIndex2 = CColorStrategy::GetDrawColorSafe(m_pStrategy);
 	}
 
 	m_cIndex.eColorIndexBg = m_colorIdxBackLine;
@@ -178,6 +184,7 @@ CColorStrategyPool::CColorStrategyPool()
 	m_pcSelectStrategy = new CColor_Select();
 	m_pcFoundStrategy = new CColor_Found();
 //	m_vStrategies.push_back(new CColor_Found);				// マッチ文字列
+	m_vStrategies.push_back(new CColor_MarkdownFence);		// Markdownのコードブロック(中では正規表現キーワードを調べない)
 	m_vStrategies.push_back(new CColor_RegexKeyword);		// 正規表現キーワード
 	m_vStrategies.push_back(new CColor_Heredoc);			// ヒアドキュメント
 	m_vStrategies.push_back(new CColor_BlockComment(COLORIDX_BLOCK1));	// ブロックコメント
@@ -248,6 +255,7 @@ void CColorStrategyPool::CheckColorMODE(
 		// CheckColorMODE はレイアウト処理全体のボトルネックになるくらい頻繁に呼び出される
 		// 基本クラスからの動的仮想関数呼び出しを使用すると無視できないほどのオーバヘッドになる模様
 		// ここはエレガントさよりも性能優先で個々の派生クラスから BeginColor() を呼び出す
+		if(m_pcMarkdownFence && m_pcMarkdownFence->BeginColor(cLineStr,nPos)){ *ppcColorStrategy = m_pcMarkdownFence; return; }
 		if(m_pcHeredoc && m_pcHeredoc->BeginColor(cLineStr,nPos)){ *ppcColorStrategy = m_pcHeredoc; return; }
 		if(m_pcBlockComment1 && m_pcBlockComment1->BeginColor(cLineStr,nPos)){ *ppcColorStrategy = m_pcBlockComment1; return; }
 		if(m_pcBlockComment2 && m_pcBlockComment2->BeginColor(cLineStr,nPos)){ *ppcColorStrategy = m_pcBlockComment2; return; }
@@ -276,6 +284,7 @@ void CColorStrategyPool::OnChangeSetting(void)
 	}
 
 	// CheckColorMODE 用
+	m_pcMarkdownFence = static_cast<CColor_MarkdownFence*>(GetStrategyByColor(COLORIDX_MARKDOWN_FENCE));	// Markdownのコードブロック
 	m_pcHeredoc = static_cast<CColor_Heredoc*>(GetStrategyByColor(COLORIDX_HEREDOC));
 	m_pcBlockComment1 = static_cast<CColor_BlockComment*>(GetStrategyByColor(COLORIDX_BLOCK1));	// ブロックコメント
 	m_pcBlockComment2 = static_cast<CColor_BlockComment*>(GetStrategyByColor(COLORIDX_BLOCK2));	// ブロックコメント2
@@ -324,7 +333,7 @@ void CColorStrategyPool::OnChangeSetting(void)
 		}
 	}
 	if( m_bSkipBeforeLayoutGeneral ){
-		if( type.m_bUseRegexKeyword ){
+		if( type.m_bUseRegexKeyword || m_pcMarkdownFence ){
 			m_bSkipBeforeLayoutGeneral = false;
 		}
 	}
@@ -355,7 +364,8 @@ bool CColorStrategyPool::HasRangeBasedColorStrategies(void) const noexcept
 		|| (m_pcBlockComment2 != nullptr)
 		|| (m_pcSingleQuote != nullptr)
 		|| (m_pcDoubleQuote != nullptr)
-		|| (m_pcHeredoc != nullptr);
+		|| (m_pcHeredoc != nullptr)
+		|| (m_pcMarkdownFence != nullptr);
 }
 
 /*!

@@ -1349,10 +1349,26 @@ void CShareData_IO::ShareData_IO_Types( CDataProfile& cProfile )
 			pShare->m_TypeMini[i].m_encoding = type.m_encoding;
 		}
 	}
-	// Markdownのタイプ別設定がなかった版の設定には、一度だけMarkdownを追加する
+	// Markdownのタイプ別設定がなかった版の設定には、一度だけMarkdownを追加する。
+	// 追加した後に既定値を変えたときは、古い版の既定値のままの設定を今の版にする
 	bool bMarkdownTypeAdded = true;
-	if( !cProfile.IOProfileData( L"Other", L"bMarkdownTypeAdded", bMarkdownTypeAdded ) && cProfile.IsReadingMode() ){
-		AppendMarkdownTypeIfMissing( types, *pShare );
+	int nMarkdownTypeVersion = MARKDOWN_TYPE_VERSION;
+	const bool bHasMarkdownTypeAdded = cProfile.IOProfileData( L"Other", L"bMarkdownTypeAdded", bMarkdownTypeAdded );
+	if( !cProfile.IOProfileData( L"Other", L"nMarkdownTypeVersion", nMarkdownTypeVersion ) ){
+		nMarkdownTypeVersion = 1;
+	}
+	if( cProfile.IsReadingMode() ){
+		if( !bHasMarkdownTypeAdded ){
+			AppendMarkdownTypeIfMissing( types, *pShare );
+		}
+		// 追加したばかりのものは今の版なので、置き換える色はない
+		if( nMarkdownTypeVersion < MARKDOWN_TYPE_VERSION ){
+			for( auto* type : types ){
+				if( type->m_eDefaultOutline == OUTLINE_MARKDOWN ){
+					UpgradeMarkdownTypeConfig( *type, nMarkdownTypeVersion );
+				}
+			}
+		}
 	}
 
 	if( cProfile.IsReadingMode() ){
@@ -1861,6 +1877,7 @@ void ShareData_IO_TypeConfig(
 
 	cProfile.IOProfileData( pszSecName, L"bStringLineOnly", types.m_bStringLineOnly );
 	cProfile.IOProfileData( pszSecName, L"bStringEndLine", types.m_bStringEndLine );
+	cProfile.IOProfileData( pszSecName, L"bMarkdownCodeBlock", types.m_bMarkdownCodeBlock );
 
 	// Block Comment
 	ShareData_IO_BlockComments( cProfile, pszSecName, std::span(types.m_cBlockComments) );

@@ -962,6 +962,102 @@ TEST(ShareData_IO, ShareData_IO_Types_AddsMarkdownTypeToOldIni)
 }
 
 /*!
+ * @brief UpgradeMarkdownTypeConfigのテスト
+ *
+ * 版1の既定のままの色とブロックコメントだけを、今の版にする。利用者が変えた色は残す
+ */
+TEST(ShareData_IO, UpgradeMarkdownTypeConfig)
+{
+	env::ShareDataTestSuite::SetUpShareData();
+
+	auto type = std::make_unique<STypeConfig>();
+	CType_Markdown().InitTypeConfig(17, *type);
+	const auto latest = std::make_unique<STypeConfig>(*type);
+
+	// 版1の設定にする
+	auto& colors = type->m_ColorInfoArr;
+	colors[COLORIDX_COMMENT].m_sColorAttr = { RGB(163, 21, 21), RGB(238, 238, 238) };
+	colors[COLORIDX_COMMENT].m_sFontAttr = { false, false };
+	colors[COLORIDX_REGEX1].m_sColorAttr.m_cTEXT = RGB(128, 0, 0);
+	colors[COLORIDX_REGEX1].m_sColorAttr.m_cBACK = colors[COLORIDX_TEXT].m_sColorAttr.m_cBACK;
+	colors[COLORIDX_REGEX1].m_sFontAttr = { true, false };
+	colors[COLORIDX_REGEX2].m_sColorAttr.m_cTEXT = RGB(1, 2, 3);	// 利用者が変えた色
+	GetDefaultColorInfo(&colors[COLORIDX_KEYWORD1], COLORIDX_KEYWORD1);	// 版1では既定値のまま
+	type->m_cBlockComments[0].SetBlockCommentRule(L"```", L"```");
+	type->m_cBlockComments[1].SetBlockCommentRule(L"~~~", L"~~~");
+	type->m_bMarkdownCodeBlock = false;
+
+	// 今の版の設定は変えない
+	auto same = std::make_unique<STypeConfig>(*type);
+	UpgradeMarkdownTypeConfig(*same, MARKDOWN_TYPE_VERSION);
+	EXPECT_THAT(same->m_ColorInfoArr[COLORIDX_COMMENT].m_sColorAttr.m_cTEXT, Eq(RGB(163, 21, 21)));
+	EXPECT_THAT(same->m_cBlockComments[0].getBlockCommentFrom(), StrEq(L"```"));
+
+	UpgradeMarkdownTypeConfig(*type, 1);
+
+	const auto& expected = latest->m_ColorInfoArr;
+	for (const int index : { int(COLORIDX_COMMENT), int(COLORIDX_REGEX1), int(COLORIDX_KEYWORD1) }) {
+		EXPECT_THAT(colors[index].m_sColorAttr.m_cTEXT, Eq(expected[index].m_sColorAttr.m_cTEXT)) << index;
+		EXPECT_THAT(colors[index].m_sColorAttr.m_cBACK, Eq(expected[index].m_sColorAttr.m_cBACK)) << index;
+		EXPECT_THAT(colors[index].m_sFontAttr.m_bBoldFont, Eq(expected[index].m_sFontAttr.m_bBoldFont)) << index;
+		EXPECT_THAT(colors[index].m_szName, StrEq(expected[index].m_szName.c_str())) << index;
+	}
+	EXPECT_THAT(colors[COLORIDX_REGEX2].m_sColorAttr.m_cTEXT, Eq(RGB(1, 2, 3)));
+	EXPECT_THAT(type->m_cBlockComments[0].getBlockCommentFrom(), StrEq(L""));
+	EXPECT_THAT(type->m_cBlockComments[1].getBlockCommentFrom(), StrEq(L""));
+	EXPECT_THAT(type->m_bMarkdownCodeBlock, IsTrue());
+
+	env::ShareDataTestSuite::TearDownShareData();
+}
+
+/*!
+ * @brief ShareData_IO_Typesのテスト
+ *
+ * 版1(nMarkdownTypeVersionがない)のINIファイルを読むと、Markdownのタイプ別設定を今の版にする
+ */
+TEST(ShareData_IO, ShareData_IO_Types_UpgradesMarkdownTypeFromVersion1)
+{
+	const auto iniPath = GetIniFileName();
+	const auto bakPath = std::filesystem::path{ iniPath.native() + L".bak" };
+
+	// bMarkdownTypeAddedがない(Markdownのタイプ別設定を自動で追加する前の版で作った)ときも、今の版にする
+	for (const bool bMarkdownTypeAdded : { true, false }) {
+		SCOPED_TRACE(testing::Message() << "bMarkdownTypeAdded=" << bMarkdownTypeAdded);
+		{
+			std::ofstream fos{ iniPath };
+			fos << "[Other]" << std::endl;
+			fos << "nTypesCount=18" << std::endl;
+			if (bMarkdownTypeAdded) {
+				fos << "bMarkdownTypeAdded=1" << std::endl;
+			}
+			fos << "[Types(17)]" << std::endl;
+			fos << "C[CMT]=1,0,1515a3,eeeeee,0" << std::endl;	// 版1の既定のコードブロックの色
+			fos << "C[RK2]=1,1,030201,f0fbff,0" << std::endl;	// 利用者が変えた太字の色
+			fos << "szBlockCommentFrom=```" << std::endl;
+			fos << "szBlockCommentTo=```" << std::endl;
+		}
+
+		env::ShareDataTestSuite::SetUpShareData();
+		CShareData_IO::LoadShareData();
+
+		const auto& types = CShareData::getInstance()->GetTypeSettings();
+		ASSERT_THAT(types.size(), Eq(18));
+		const auto& markdown = *types[17];
+		EXPECT_THAT(markdown.m_szTypeName, StrEq(L"Markdown"));
+		EXPECT_THAT(markdown.m_ColorInfoArr[COLORIDX_COMMENT].m_sColorAttr.m_cTEXT, Eq(RGB(36, 41, 46)));
+		EXPECT_THAT(markdown.m_ColorInfoArr[COLORIDX_REGEX2].m_sColorAttr.m_cTEXT, Eq(RGB(1, 2, 3)));
+		EXPECT_THAT(markdown.m_cBlockComments[0].getBlockCommentFrom(), StrEq(L""));
+		EXPECT_THAT(markdown.m_bMarkdownCodeBlock, IsTrue());
+
+		env::ShareDataTestSuite::TearDownShareData();
+
+		std::error_code ec;
+		std::filesystem::remove(bakPath, ec);
+		std::filesystem::remove(iniPath, ec);
+	}
+}
+
+/*!
  * @brief ShareData_IO_ColorSetのテスト
  */
 TEST(ShareData_IO, ShareData_IO_ColorSet)

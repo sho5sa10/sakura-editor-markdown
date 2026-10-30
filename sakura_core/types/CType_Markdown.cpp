@@ -6,6 +6,7 @@
 */
 
 #include "StdAfx.h"
+#include <span>
 #include <string_view>
 #include <vector>
 #include "types/CType.h"
@@ -31,7 +32,7 @@ struct SMarkdownRegexKeyword {
 	同じ位置で複数が一致するときは、先に書いたものが優先される。
 	行頭(/^)のものは行全体、または行頭の記号に色を付ける。
 	正規表現キーワードは1行ずつ調べるので、行をまたぐ強調には色が付かない。
-	フェンスで囲んだコードブロックは、ブロックコメントとして色を付ける(その中では正規表現キーワードを調べない)。
+	フェンスで囲んだコードブロックの中は、CColor_MarkdownFence が色を付ける(その中では正規表現キーワードを調べない)。
 */
 const SMarkdownRegexKeyword g_aMarkdownRegexKeywords[] = {
 	// 行頭
@@ -59,11 +60,93 @@ const SMarkdownRegexKeyword g_aMarkdownRegexKeywords[] = {
 	{ COLORIDX_REGEX9,	LR"(/\|/k)" },																	// 表の列の区切り
 };
 
-void SetMarkdownColor(ColorInfo& info, COLORREF crText, bool bBold = false)
+//! Markdownの既定の色(既定値から変えるもの)
+struct SMarkdownColor {
+	EColorIndexType	eColorIndex;
+	COLORREF		crText;
+	bool			bBold;
+	bool			bUnderLine;
+	COLORREF		crBack;		//!< CLR_INVALIDなら既定値のまま
+};
+
+constexpr COLORREF kCodeBack = RGB( 234, 236, 239 );	//!< コードの背景
+
+/*!
+	今の版の色。配色はGitHubの画面を参考にした。
+	コードブロックの中の字句には、強調キーワード1～10を使う(CColor_MarkdownFence)。
+	変えたときは MARKDOWN_TYPE_VERSION を上げ、前の版の色を g_aMarkdownColorsV* に残して、
+	UpgradeMarkdownTypeConfig で置き換えられるようにする。
+*/
+constexpr SMarkdownColor g_aMarkdownColors[] = {
+	{ COLORIDX_COMMENT,		RGB(  36,  41,  46 ), false, false, kCodeBack },			// コードブロック
+	{ COLORIDX_REGEX1,		RGB(   0,  92, 197 ), true,  false, CLR_INVALID },			// 見出し
+	{ COLORIDX_REGEX2,		RGB( 215,  58,  73 ), true,  false, CLR_INVALID },			// 太字
+	{ COLORIDX_REGEX3,		RGB( 111,  66, 193 ), false, false, CLR_INVALID },			// 斜体
+	{ COLORIDX_REGEX4,		RGB( 106, 115, 125 ), false, false, CLR_INVALID },			// 取り消し線
+	{ COLORIDX_REGEX5,		RGB( 199,  37,  78 ), false, false, RGB( 249, 242, 244 ) },	// インラインコード
+	{ COLORIDX_REGEX6,		RGB(   3, 102, 214 ), false, true,  CLR_INVALID },			// リンク、画像
+	{ COLORIDX_REGEX7,		RGB(  34, 134,  58 ), false, false, CLR_INVALID },			// 引用
+	{ COLORIDX_REGEX8,		RGB( 227,  98,   9 ), true,  false, CLR_INVALID },			// リストの記号
+	{ COLORIDX_REGEX9,		RGB( 106, 115, 125 ), true,  false, CLR_INVALID },			// 区切り線、表の区切り
+	{ COLORIDX_REGEX10,		RGB(   0, 134, 179 ), false, false, CLR_INVALID },			// HTMLのタグとコメント
+	{ COLORIDX_KEYWORD1,	RGB( 215,  58,  73 ), false, false, kCodeBack },			// コード: キーワード
+	{ COLORIDX_KEYWORD2,	RGB(   3,  47,  98 ), false, false, kCodeBack },			// コード: 文字列
+	{ COLORIDX_KEYWORD3,	RGB( 106, 115, 125 ), false, false, kCodeBack },			// コード: コメント
+	{ COLORIDX_KEYWORD4,	RGB(   0,  92, 197 ), false, false, kCodeBack },			// コード: 数値と定数
+	{ COLORIDX_KEYWORD5,	RGB( 227,  98,   9 ), false, false, kCodeBack },			// コード: 変数とキー
+	{ COLORIDX_KEYWORD6,	RGB( 111,  66, 193 ), false, false, kCodeBack },			// コード: 関数名とコマンド名
+	{ COLORIDX_KEYWORD7,	RGB(  34, 134,  58 ), false, false, kCodeBack },			// コード: タグ
+	{ COLORIDX_KEYWORD8,	RGB(   0, 134, 179 ), false, false, kCodeBack },			// コード: 属性名
+	{ COLORIDX_KEYWORD9,	RGB(  34, 134,  58 ), false, false, RGB( 230, 255, 237 ) },	// コード: 差分の追加行
+	{ COLORIDX_KEYWORD10,	RGB( 179,  29,  40 ), false, false, RGB( 255, 235, 233 ) },	// コード: 差分の削除行
+};
+
+//! 版1(v1.0.0)の色。VS CodeのLight+テーマを参考にしたもの
+constexpr SMarkdownColor g_aMarkdownColorsV1[] = {
+	{ COLORIDX_COMMENT,		RGB( 163,  21,  21 ), false, false, RGB( 238, 238, 238 ) },
+	{ COLORIDX_REGEX1,		RGB( 128,   0,   0 ), true,  false, CLR_INVALID },
+	{ COLORIDX_REGEX2,		RGB(   0,   0, 128 ), true,  false, CLR_INVALID },
+	{ COLORIDX_REGEX3,		RGB(  38, 127, 153 ), false, false, CLR_INVALID },
+	{ COLORIDX_REGEX4,		RGB( 128, 128, 128 ), false, false, CLR_INVALID },
+	{ COLORIDX_REGEX5,		RGB( 163,  21,  21 ), false, false, RGB( 238, 238, 238 ) },
+	{ COLORIDX_REGEX6,		RGB(   0,   0, 255 ), false, false, CLR_INVALID },
+	{ COLORIDX_REGEX7,		RGB(   0, 128,   0 ), false, false, CLR_INVALID },
+	{ COLORIDX_REGEX8,		RGB(   4,  81, 165 ), true,  false, CLR_INVALID },
+	{ COLORIDX_REGEX9,		RGB( 128, 128, 128 ), true,  false, CLR_INVALID },
+	{ COLORIDX_REGEX10,		RGB( 175,   0, 219 ), false, false, CLR_INVALID },
+};
+
+void ApplyMarkdownColor(ColorInfo& info, const SMarkdownColor& color)
 {
 	info.m_bDisp = true;
-	info.m_sFontAttr.m_bBoldFont = bBold;
-	info.m_sColorAttr.m_cTEXT = crText;
+	info.m_sFontAttr.m_bBoldFont = color.bBold;
+	info.m_sFontAttr.m_bUnderLine = color.bUnderLine;
+	info.m_sColorAttr.m_cTEXT = color.crText;
+	if( color.crBack != CLR_INVALID ){
+		info.m_sColorAttr.m_cBACK = color.crBack;
+	}
+}
+
+//! 指定の色の一覧で、その色番号の色を作る(一覧にない色番号は既定値)
+ColorInfo MakeMarkdownColor(std::span<const SMarkdownColor> colors, int nColorIndex)
+{
+	ColorInfo info;
+	GetDefaultColorInfo( &info, nColorIndex );
+	for( const auto& color : colors ){
+		if( color.eColorIndex == nColorIndex ){
+			ApplyMarkdownColor( info, color );
+		}
+	}
+	return info;
+}
+
+bool IsSameColor(const ColorInfo& a, const ColorInfo& b) noexcept
+{
+	return a.m_bDisp == b.m_bDisp
+		&& a.m_sFontAttr.m_bBoldFont == b.m_sFontAttr.m_bBoldFont
+		&& a.m_sFontAttr.m_bUnderLine == b.m_sFontAttr.m_bUnderLine
+		&& a.m_sColorAttr.m_cTEXT == b.m_sColorAttr.m_cTEXT
+		&& a.m_sColorAttr.m_cBACK == b.m_sColorAttr.m_cBACK;
 }
 
 } // namespace
@@ -78,26 +161,14 @@ void CType_Markdown::InitTypeConfigImp(STypeConfig* pType)
 	//設定
 	pType->m_nTextWrapMethod = WRAP_WINDOW_WIDTH;				// テキストの折り返し方法(右端で折り返す)
 	pType->m_eDefaultOutline = OUTLINE_MARKDOWN;				/* アウトライン解析方法 */
-	pType->m_cBlockComments[0].SetBlockCommentRule( L"```", L"```" );	/* フェンスで囲んだコードブロック */
-	pType->m_cBlockComments[1].SetBlockCommentRule( L"~~~", L"~~~" );	/* フェンスで囲んだコードブロック2 */
+	pType->m_bMarkdownCodeBlock = true;							// コードブロック(```)を言語ごとに色分けする
 	pType->m_ColorInfoArr[COLORIDX_SSTRING].m_bDisp = false;	//シングルクォーテーション文字列を色分け表示しない
 	pType->m_ColorInfoArr[COLORIDX_WSTRING].m_bDisp = false;	//ダブルクォーテーション文字列を色分け表示しない
 
-	//色(VS CodeのLight+テーマのMarkdownの配色を参考にした)
-	auto& colors = pType->m_ColorInfoArr;
-	SetMarkdownColor( colors[COLORIDX_COMMENT], RGB( 163,  21,  21 ) );			// コードブロック
-	colors[COLORIDX_COMMENT].m_sColorAttr.m_cBACK = RGB( 238, 238, 238 );
-	SetMarkdownColor( colors[COLORIDX_REGEX1],  RGB( 128,   0,   0 ), true );	// 見出し
-	SetMarkdownColor( colors[COLORIDX_REGEX2],  RGB(   0,   0, 128 ), true );	// 太字
-	SetMarkdownColor( colors[COLORIDX_REGEX3],  RGB(  38, 127, 153 ) );			// 斜体
-	SetMarkdownColor( colors[COLORIDX_REGEX4],  RGB( 128, 128, 128 ) );			// 取り消し線
-	SetMarkdownColor( colors[COLORIDX_REGEX5],  RGB( 163,  21,  21 ) );			// インラインコード
-	colors[COLORIDX_REGEX5].m_sColorAttr.m_cBACK = RGB( 238, 238, 238 );
-	SetMarkdownColor( colors[COLORIDX_REGEX6],  RGB(   0,   0, 255 ) );			// リンク、画像
-	SetMarkdownColor( colors[COLORIDX_REGEX7],  RGB(   0, 128,   0 ) );			// 引用
-	SetMarkdownColor( colors[COLORIDX_REGEX8],  RGB(   4,  81, 165 ), true );	// リストの記号
-	SetMarkdownColor( colors[COLORIDX_REGEX9],  RGB( 128, 128, 128 ), true );	// 区切り線、表の区切り
-	SetMarkdownColor( colors[COLORIDX_REGEX10], RGB( 175,   0, 219 ) );			// HTMLのタグとコメント
+	//色
+	for( const auto& color : g_aMarkdownColors ){
+		ApplyMarkdownColor( pType->m_ColorInfoArr[color.eColorIndex], color );
+	}
 
 	//正規表現キーワード
 	static_assert( std::size(g_aMarkdownRegexKeywords) <= MAX_REGEX_KEYWORD );
@@ -114,6 +185,29 @@ void CType_Markdown::InitTypeConfigImp(STypeConfig* pType)
 		keywordPos += int(wcslen(&pKeyword[keywordPos]) + 1);
 	}
 	pKeyword[keywordPos] = L'\0';
+}
+
+void UpgradeMarkdownTypeConfig( STypeConfig& type, int nFromVersion )
+{
+	if( nFromVersion < 2 ){
+		// 版1は、コードブロックをブロックコメントで色分けしていた
+		for( auto& blockComment : type.m_cBlockComments ){
+			const std::wstring_view from = blockComment.getBlockCommentFrom();
+			const std::wstring_view to = blockComment.getBlockCommentTo();
+			if( (from == L"```" && to == L"```") || (from == L"~~~" && to == L"~~~") ){
+				blockComment.SetBlockCommentRule( L"", L"" );
+			}
+		}
+		type.m_bMarkdownCodeBlock = true;
+
+		// 版1の既定のままの色だけを、今の版の色にする
+		for( const auto& color : g_aMarkdownColors ){
+			auto& info = type.m_ColorInfoArr[color.eColorIndex];
+			if( IsSameColor( info, MakeMarkdownColor( g_aMarkdownColorsV1, color.eColorIndex ) ) ){
+				static_cast<ColorInfoBase&>( info ) = MakeMarkdownColor( g_aMarkdownColors, color.eColorIndex );
+			}
+		}
+	}
 }
 
 /*!	Markdown アウトライン解析

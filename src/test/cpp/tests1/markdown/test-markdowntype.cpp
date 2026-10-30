@@ -77,10 +77,16 @@ TEST_F(CTypeMarkdownTest, TypeConfig)
 	EXPECT_THAT(type.m_szTypeExts, StrEq(L"md,markdown,mdown,mkd"));
 	EXPECT_THAT(type.m_eDefaultOutline, Eq(OUTLINE_MARKDOWN));
 	EXPECT_THAT(type.m_nTextWrapMethod, Eq(WRAP_WINDOW_WIDTH));
-	EXPECT_THAT(type.m_cBlockComments[0].getBlockCommentFrom(), StrEq(L"```"));
-	EXPECT_THAT(type.m_cBlockComments[0].getBlockCommentTo(), StrEq(L"```"));
-	EXPECT_THAT(type.m_cBlockComments[1].getBlockCommentFrom(), StrEq(L"~~~"));
-	EXPECT_THAT(type.m_cBlockComments[1].getBlockCommentTo(), StrEq(L"~~~"));
+	// コードブロックはブロックコメントでなく、CColor_MarkdownFenceで色を付ける
+	EXPECT_THAT(type.m_bMarkdownCodeBlock, IsTrue());
+	EXPECT_THAT(type.m_cBlockComments[0].getBlockCommentFrom(), StrEq(L""));
+	EXPECT_THAT(type.m_cBlockComments[1].getBlockCommentFrom(), StrEq(L""));
+	for (int i = COLORIDX_KEYWORD1; i <= COLORIDX_KEYWORD10; ++i) {
+		EXPECT_THAT(type.m_ColorInfoArr[i].m_bDisp, IsTrue()) << i;
+	}
+	for (int i = 0; i < MAX_KEYWORDSET_PER_TYPE; ++i) {
+		EXPECT_THAT(type.m_nKeyWordSetIdx[i], Eq(-1)) << i;	// 強調キーワードはコードブロックの色にだけ使う
+	}
 	EXPECT_THAT(type.m_ColorInfoArr[COLORIDX_SSTRING].m_bDisp, IsFalse());
 	EXPECT_THAT(type.m_ColorInfoArr[COLORIDX_WSTRING].m_bDisp, IsFalse());
 	EXPECT_THAT(type.m_ColorInfoArr[COLORIDX_COMMENT].m_bDisp, IsTrue());

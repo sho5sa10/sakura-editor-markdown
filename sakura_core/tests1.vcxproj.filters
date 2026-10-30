@@ -76,6 +76,9 @@
     <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdowntype.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdowncodetokenizer.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\test\cpp\tests1\markdown\test-md4cparser.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>

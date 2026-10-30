@@ -106,6 +106,7 @@ MATCHER_P(EqSTypeConfig, expected, "Checks if STypeConfig is equal to the expect
 	EXPECT_THAT(actual.m_bStringLineOnly, expected.m_bStringLineOnly);
 	EXPECT_THAT(actual.m_bStringEndLine, expected.m_bStringEndLine);
 	EXPECT_THAT(actual.m_nHeredocType, expected.m_nHeredocType);
+	EXPECT_THAT(actual.m_bMarkdownCodeBlock, expected.m_bMarkdownCodeBlock);
 	EXPECT_THAT(actual.m_szIndentChars, StrEq(expected.m_szIndentChars));
 	EXPECT_THAT(actual.m_nColorInfoArrNum, expected.m_nColorInfoArrNum);
 	for (size_t i = 0; i < std::size(actual.m_ColorInfoArr); ++i) {

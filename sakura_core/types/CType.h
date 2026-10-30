@@ -138,6 +138,7 @@ struct STypeConfig{
 	bool				m_bStringLineOnly;				//!< 文字列は行内のみ
 	bool				m_bStringEndLine;				//!< (終了文字列がない場合)行末まで色分け
 	int					m_nHeredocType;
+	bool				m_bMarkdownCodeBlock;			//!< Markdownのコードブロック(```)を言語ごとに色分けする
 	wchar_t				m_szIndentChars[64];			//!< その他のインデント対象文字
 
 	int					m_nColorInfoArrNum;				//!< 色設定配列の有効数
@@ -321,6 +322,19 @@ GEN_CTYPE(CType_Html)
 GEN_CTYPE(CType_Ini)
 GEN_CTYPE(CType_Java)
 GEN_CTYPE(CType_Markdown)
+
+//! Markdownのタイプ別設定の版。既定値(配色など)を変えたら上げて、UpgradeMarkdownTypeConfigに移行を書く
+constexpr int MARKDOWN_TYPE_VERSION = 2;
+
+/*!
+	@brief 古い版のMarkdownのタイプ別設定を、今の版にする
+
+	既定値のままの色だけを今の版の既定値にする(利用者が変えた色は残す)。
+
+	@param[in,out]	type			Markdownのタイプ別設定
+	@param[in]		nFromVersion	設定ファイルに書かれていた版
+*/
+void UpgradeMarkdownTypeConfig( STypeConfig& type, int nFromVersion );
 GEN_CTYPE(CType_Pascal)
 GEN_CTYPE(CType_Perl)
 GEN_CTYPE(CType_Python)

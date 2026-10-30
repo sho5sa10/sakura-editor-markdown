@@ -345,6 +345,7 @@
     <ClInclude Include="..\sakura_core\markdown\CMarkdownImageLoader.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownImagePath.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownHeadingScanner.h" />
+    <ClInclude Include="..\sakura_core\markdown\MarkdownCodeTokenizer.h" />
     <ClInclude Include="..\sakura_core\markdown\IMarkdownParser.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownLayout.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownModel.h" />
@@ -449,6 +450,7 @@
     <ClInclude Include="..\sakura_core\view\colors\CColor_Comment.h" />
     <ClInclude Include="..\sakura_core\view\colors\CColor_Found.h" />
     <ClInclude Include="..\sakura_core\view\colors\CColor_Heredoc.h" />
+    <ClInclude Include="..\sakura_core\view\colors\CColor_MarkdownFence.h" />
     <ClInclude Include="..\sakura_core\view\colors\CColor_KeywordSet.h" />
     <ClInclude Include="..\sakura_core\view\colors\CColor_Numeric.h" />
     <ClInclude Include="..\sakura_core\view\colors\CColor_Quote.h" />
@@ -727,6 +729,7 @@
     <ClCompile Include="..\sakura_core\markdown\CMarkdownImageLoader.cpp" />
     <ClCompile Include="..\sakura_core\markdown\MarkdownImagePath.cpp" />
     <ClCompile Include="..\sakura_core\markdown\MarkdownHeadingScanner.cpp" />
+    <ClCompile Include="..\sakura_core\markdown\MarkdownCodeTokenizer.cpp" />
     <ClCompile Include="..\sakura_core\markdown\MarkdownLayout.cpp" />
     <ClCompile Include="..\sakura_core\markdown\Md4cParser.cpp" />
     <ClCompile Include="..\sakura_core\mem\CMemory.cpp" />
@@ -863,6 +866,7 @@
     <ClCompile Include="..\sakura_core\view\colors\CColor_Comment.cpp" />
     <ClCompile Include="..\sakura_core\view\colors\CColor_Found.cpp" />
     <ClCompile Include="..\sakura_core\view\colors\CColor_Heredoc.cpp" />
+    <ClCompile Include="..\sakura_core\view\colors\CColor_MarkdownFence.cpp" />
     <ClCompile Include="..\sakura_core\view\colors\CColor_KeywordSet.cpp" />
     <ClCompile Include="..\sakura_core\view\colors\CColor_Numeric.cpp" />
     <ClCompile Include="..\sakura_core\view\colors\CColor_Quote.cpp" />

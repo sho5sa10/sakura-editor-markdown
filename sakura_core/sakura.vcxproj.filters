@@ -634,6 +634,9 @@
     <ClInclude Include="..\sakura_core\view\colors\CColor_Heredoc.h">
       <Filter>Cpp Source Files\view\colors</Filter>
     </ClInclude>
+    <ClInclude Include="..\sakura_core\view\colors\CColor_MarkdownFence.h">
+      <Filter>Cpp Source Files\view\colors</Filter>
+    </ClInclude>
     <ClInclude Include="..\sakura_core\view\colors\CColor_KeywordSet.h">
       <Filter>Cpp Source Files\view\colors</Filter>
     </ClInclude>
@@ -1160,6 +1163,9 @@
       <Filter>Cpp Source Files\markdown</Filter>
     </ClInclude>
     <ClInclude Include="..\sakura_core\markdown\MarkdownHeadingScanner.h">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sakura_core\markdown\MarkdownCodeTokenizer.h">
       <Filter>Cpp Source Files\markdown</Filter>
     </ClInclude>
     <ClInclude Include="..\sakura_core\markdown\IMarkdownParser.h">
@@ -1786,6 +1792,9 @@
     <ClCompile Include="..\sakura_core\view\colors\CColor_Heredoc.cpp">
       <Filter>Cpp Source Files\view\colors</Filter>
     </ClCompile>
+    <ClCompile Include="..\sakura_core\view\colors\CColor_MarkdownFence.cpp">
+      <Filter>Cpp Source Files\view\colors</Filter>
+    </ClCompile>
     <ClCompile Include="..\sakura_core\view\colors\CColor_KeywordSet.cpp">
       <Filter>Cpp Source Files\view\colors</Filter>
     </ClCompile>
@@ -2396,6 +2405,9 @@
       <Filter>Cpp Source Files\markdown</Filter>
     </ClCompile>
     <ClCompile Include="..\sakura_core\markdown\MarkdownHeadingScanner.cpp">
+      <Filter>Cpp Source Files\markdown</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sakura_core\markdown\MarkdownCodeTokenizer.cpp">
       <Filter>Cpp Source Files\markdown</Filter>
     </ClCompile>
     <ClCompile Include="..\sakura_core\markdown\MarkdownLayout.cpp">

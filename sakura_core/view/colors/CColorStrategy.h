@@ -28,6 +28,7 @@ class CColor_BlockComment;
 class CColor_SingleQuote;
 class CColor_DoubleQuote;
 class CColor_Heredoc;
+class CColor_MarkdownFence;
 class CEditView;
 class CStringRef;
 
@@ -134,6 +135,12 @@ public:
 
 	//! 色定義
 	virtual EColorIndexType GetStrategyColor() const = 0;
+	//! 描画に使う色。範囲の途中で色を変える色分け(Markdownのコードブロック)だけが、GetStrategyColorと違う色を返す
+	virtual EColorIndexType GetDrawColor() const{
+		return GetStrategyColor();
+	}
+	//! 範囲の途中で描画の色が変わるかを調べる。変わったらtrue
+	virtual bool UpdateDrawColor([[maybe_unused]] const CStringRef& cStr, [[maybe_unused]] int nPos) { return false; }
 	virtual CLayoutColorInfo* GetStrategyColorInfo() const{
 		return nullptr;
 	}
@@ -157,6 +164,12 @@ public:
 	static EColorIndexType GetStrategyColorSafe(const CColorStrategy *strategy) {
 		if (strategy) {
 			return strategy->GetStrategyColor();
+		}
+		return COLORIDX_TEXT;
+	}
+	static EColorIndexType GetDrawColorSafe(const CColorStrategy *strategy) {
+		if (strategy) {
+			return strategy->GetDrawColor();
 		}
 		return COLORIDX_TEXT;
 	}
@@ -220,6 +233,7 @@ private:
 	CColor_SingleQuote*				m_pcSingleQuote = nullptr;
 	CColor_DoubleQuote*				m_pcDoubleQuote = nullptr;
 	CColor_Heredoc*					m_pcHeredoc = nullptr;
+	CColor_MarkdownFence*			m_pcMarkdownFence = nullptr;
 
 	CEditView*						m_pcView = nullptr;
 

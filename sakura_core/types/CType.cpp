@@ -162,6 +162,7 @@ void _DefaultConfig(STypeConfig* pType)
 	pType->m_bStringLineOnly = false;
 	pType->m_bStringEndLine  = false;
 	pType->m_nHeredocType = HEREDOC_PHP;
+	pType->m_bMarkdownCodeBlock = false;
 	pType->m_szIndentChars[0] = L'\0';		/* その他のインデント対象文字 */
 
 	pType->m_nColorInfoArrNum = COLORIDX_LAST;
