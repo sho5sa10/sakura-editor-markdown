@@ -708,3 +708,82 @@ TEST(MarkdownLayout, ImageItemsAreSortedByY)
 		EXPECT_TRUE(result.images[i - 1].y < result.images[i].y);
 	}
 }
+
+namespace {
+
+TextItem PageLine(int y, int height)
+{
+	TextItem item;
+	item.y = y;
+	item.height = height;
+	item.text = L"x";
+	return item;
+}
+
+ImageItem PageImage(int y, int height)
+{
+	ImageItem item;
+	item.y = y;
+	item.height = height;
+	return item;
+}
+
+} // namespace
+
+TEST(MarkdownLayout, PaginateShortDocumentIsOnePage)
+{
+	LayoutResult layout;
+	layout.height = 80;
+	layout.texts.push_back(PageLine(10, 20));
+	EXPECT_EQ(std::vector<int>({ 0 }), PaginateLayout(layout, 100));
+	EXPECT_EQ(std::vector<int>({ 0 }), PaginateLayout(layout, 0));
+}
+
+TEST(MarkdownLayout, PaginateDoesNotSplitLines)
+{
+	LayoutResult layout;
+	layout.height = 250;
+	for (int y = 0; y < 240; y += 30) layout.texts.push_back(PageLine(y, 25));	// 0,30,...,210
+	// 100 は 90〜115 の行にかかるので、90 で区切る。次は 190 で、180〜205 の行にかかるので 180
+	EXPECT_EQ(std::vector<int>({ 0, 90, 180 }), PaginateLayout(layout, 100));
+}
+
+TEST(MarkdownLayout, PaginateMovesImageThatFitsToNextPage)
+{
+	LayoutResult layout;
+	layout.height = 200;
+	layout.texts.push_back(PageLine(0, 20));
+	layout.images.push_back(PageImage(60, 80));	// 60〜140。100 にかかるので、60 で区切る
+	EXPECT_EQ(std::vector<int>({ 0, 60, 160 }), PaginateLayout(layout, 100));
+}
+
+TEST(MarkdownLayout, PaginateCutsItemsTallerThanAPage)
+{
+	LayoutResult layout;
+	layout.height = 300;
+	layout.images.push_back(PageImage(10, 250));	// 1ページより高いので、切る
+	EXPECT_EQ(std::vector<int>({ 0, 100, 200 }), PaginateLayout(layout, 100));
+}
+
+TEST(MarkdownLayout, PaginateAlwaysProgresses)
+{
+	LayoutResult layout;
+	layout.height = 200;
+	layout.texts.push_back(PageLine(0, 100));	// ページの先頭から1ページいっぱいの行
+	layout.texts.push_back(PageLine(100, 100));
+	EXPECT_EQ(std::vector<int>({ 0, 100 }), PaginateLayout(layout, 100));
+}
+
+TEST(MarkdownLayout, PaginateKeepsFillsTogether)
+{
+	LayoutResult layout;
+	layout.height = 200;
+	layout.texts.push_back(PageLine(0, 20));
+	FillItem table;	// 表の枠(85〜160)。文字の行(95〜)より少し上から始まる
+	table.y = 85;
+	table.height = 75;
+	table.kind = FillKind::TableBorder;
+	layout.fills.push_back(table);
+	layout.texts.push_back(PageLine(95, 20));
+	EXPECT_EQ(std::vector<int>({ 0, 85, 185 }), PaginateLayout(layout, 100));
+}

@@ -347,6 +347,7 @@
     <ClInclude Include="..\sakura_core\markdown\MarkdownHeadingScanner.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownCodeTokenizer.h" />
     <ClInclude Include="..\sakura_core\markdown\IMarkdownParser.h" />
+    <ClInclude Include="..\sakura_core\markdown\MarkdownHtml.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownLayout.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownModel.h" />
     <ClInclude Include="..\sakura_core\markdown\MarkdownText.h" />
@@ -730,6 +731,7 @@
     <ClCompile Include="..\sakura_core\markdown\MarkdownImagePath.cpp" />
     <ClCompile Include="..\sakura_core\markdown\MarkdownHeadingScanner.cpp" />
     <ClCompile Include="..\sakura_core\markdown\MarkdownCodeTokenizer.cpp" />
+    <ClCompile Include="..\sakura_core\markdown\MarkdownHtml.cpp" />
     <ClCompile Include="..\sakura_core\markdown\MarkdownLayout.cpp" />
     <ClCompile Include="..\sakura_core\markdown\Md4cParser.cpp" />
     <ClCompile Include="..\sakura_core\mem\CMemory.cpp" />

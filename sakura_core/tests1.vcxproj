@@ -129,6 +129,7 @@
     <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdowntype.cpp" />
     <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdowncodetokenizer.cpp" />
     <ClCompile Include="..\src\test\cpp\tests1\markdown\test-md4cparser.cpp" />
+    <ClCompile Include="..\src\test\cpp\tests1\markdown\test-markdownhtml.cpp" />
     <ClCompile Include="..\src\test\cpp\tests1\view\test-color-strategy.cpp" />
     <ClCompile Include="..\src\test\cpp\tests1\view\test-figure-strategy.cpp" />
     <ClCompile Include="..\src\test\cpp\tests1\window\EditorTestSuite.cpp" />

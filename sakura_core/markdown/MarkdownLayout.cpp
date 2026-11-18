@@ -755,4 +755,40 @@ LayoutResult BuildLayout(const Document& document, ITextMeasurer& measurer, cons
 	return layouter.Run(document);
 }
 
+std::vector<int> PaginateLayout(const LayoutResult& layout, int pageHeight)
+{
+	std::vector<int> starts;
+	const int total = (std::max)(1, layout.height);
+	if (pageHeight <= 0) {
+		starts.push_back(0);
+		return starts;
+	}
+	// 境目にかかるもの(高さが1ページ以下)があれば、その上端まで境目を上げる。上げた先でまた別のものにかかることがある
+	const auto raise = [pageHeight](const auto& items, int top, int& boundary) {
+		bool moved = false;
+		for (const auto& item : items) {
+			if (item.y > top && item.y < boundary && item.y + item.height > boundary && item.height <= pageHeight) {
+				boundary = item.y;
+				moved = true;
+			}
+		}
+		return moved;
+	};
+	int top = 0;
+	for (;;) {
+		starts.push_back(top);
+		const int bottom = top + pageHeight;
+		if (bottom >= total) break;
+		int boundary = bottom;
+		for (bool moved = true; moved;) {
+			moved = raise(layout.texts, top, boundary);
+			moved = raise(layout.images, top, boundary) || moved;
+			moved = raise(layout.fills, top, boundary) || moved;	// 表の罫線やコードの背景
+		}
+		if (boundary <= top) boundary = bottom;	// 送ると何も残らない
+		top = boundary;
+	}
+	return starts;
+}
+
 } // namespace markdown

@@ -132,6 +132,19 @@ struct LayoutResult {
 */
 LayoutResult BuildLayout(const Document& document, ITextMeasurer& measurer, const LayoutSettings& settings);
 
+/*!
+	@brief 印刷のために、レイアウトの結果をページに分ける
+
+	文字の行、画像、塗りつぶし(表の罫線、コードの背景、引用の縦線など)のうち、
+	1ページに収まる大きさのものは、ページの境目で切らない(次のページに送る)。
+	このため、1ページに収まる表やコードブロックは、まとめて次のページに送る。
+	1ページより高い画像や、送ると1ページに何も残らないものは、そのまま切る。
+	@param[in] layout		BuildLayout の結果
+	@param[in] pageHeight	1ページに入る高さ(px)
+	@return 各ページの先頭の y 座標(文書の座標、昇順)。最初は 0 で、少なくとも1ページある
+*/
+std::vector<int> PaginateLayout(const LayoutResult& layout, int pageHeight);
+
 } // namespace markdown
 
 #endif /* SAKURA_MARKDOWNLAYOUT_5F1C8E37_0A92_4B64_83D5_E7A4C19B2F60_H_ */

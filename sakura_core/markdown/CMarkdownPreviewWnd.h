@@ -10,6 +10,7 @@
 
 #include <windows.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -84,11 +85,38 @@ public:
 	//! 先頭へスクロールする
 	void ScrollToTop();
 
+	/*!
+		文書を、書式付きの HTML とプレーンテキストでクリップボードに入れる。
+		Teams、Outlook、Word などに貼ると、表や見出しがそのまま使える。
+		表示できているローカルの画像は、data: URI で埋め込む。
+		@retval false	文書が空、またはクリップボードを使えなかった
+	*/
+	bool CopyAsHtml();
+	/*!
+		文書全体を、プレビューと同じ見た目の画像(PNG と DIB)にしてクリップボードに入れる。
+		幅はプレビューの幅。高さが上限を超えるときは、上の部分だけにする。
+		@retval false	文書が空、またはクリップボードを使えなかった
+	*/
+	bool CopyAsImage();
+	/*!
+		プレビューの内容を印刷する。プリンターを選ぶダイアログを出す。
+		プリンターの解像度でレイアウトし直し、白地に黒で、余白 15mm、下にページ番号を付けて印刷する。
+		@retval false	文書が空、キャンセル、または印刷に失敗した
+	*/
+	bool Print();
+
 	//! 最後にレイアウトした結果の高さ(テスト・診断用)
 	int GetContentHeight() const noexcept { return m_layout.height; }
 	int GetScrollPosition() const noexcept { return m_scrollY; }
 
 private:
+	//! 描画の範囲を探すための、項目の高さの最大
+	struct LayoutBounds {
+		int		text = 0;
+		int		fill = 0;
+		int		image = 0;
+	};
+
 	struct PreviewColors {
 		COLORREF text = RGB(0, 0, 0);
 		COLORREF background = RGB(255, 255, 255);
@@ -107,18 +135,35 @@ private:
 	void OnVScroll(UINT code);
 	void OnMouseWheel(int delta);
 	void OnKeyDown(UINT key);
+	void OnContextMenu(int x, int y);
+	bool OnAccelerator(WORD id);
 	void OnParsed();
 	void OnImagesLoaded();
 	ImageSize LookupImage(const std::wstring& target);
 	void ClearImages() noexcept;
 
+	static PreviewColors MakeColors(COLORREF text, COLORREF background) noexcept;
+	static LayoutBounds MeasureBounds(const LayoutResult& layout) noexcept;
+	//! dpi に合わせたレイアウトの設定(余白などの寸法)
+	LayoutSettings MakeLayoutSettings(UINT dpi, int width) const noexcept;
+	//! 本文とコードのフォント。lfHeight は m_dpi のピクセル単位
+	void GetBaseFonts(LOGFONTW& body, LOGFONTW& mono) const;
+	//! 読み込み済みの画像の大きさを、dpi に合わせて返す(読み込みの依頼はしない)
+	ImageSize LookupLoadedImage(const std::wstring& target, UINT dpi) const;
 	void EnsureResources(HDC hdc);
 	void Relayout();
+	bool EnsureLayout();
 	void UpdateScrollBar();
 	void ScrollTo(int position);
 	void ScrollBy(int delta);
 	int ScaleDpi(int pixelsAt96) const noexcept;
 	void PaintTo(HDC hdc, const RECT& area);
+	//! レイアウトの結果を描く。offsetY は文書の座標から dc の座標を引く量(スクロール位置)
+	//! printer のときは、AlphaBlend を使わずに画像を白地に合成して描く(対応しないプリンターがあるため)
+	void DrawLayout(HDC dc, const LayoutResult& layout, const LayoutBounds& bounds, CPreviewFontCache& fonts,
+		const PreviewColors& colors, bool printer, int originX, int offsetY, int viewTop, int viewBottom);
+	//! 表示できている画像のファイルを data: URI にする。budget は残りのバイト数で、使った分を減らす
+	std::string ImageDataUri(const std::wstring& target, std::size_t& budget);
 	void DeriveColors();
 
 	HWND							m_hWnd = nullptr;
@@ -127,8 +172,7 @@ private:
 	LayoutSettings					m_layoutSettings;
 	int								m_layoutWidth = -1;		//!< 最後にレイアウトしたときの幅
 	bool							m_layoutDirty = true;
-	int								m_maxTextHeight = 0;	//!< 配置された文字列の高さの最大(描画範囲の検索用)
-	int								m_maxFillHeight = 0;
+	LayoutBounds					m_bounds;	//!< m_layout の項目の高さの最大(描画範囲の検索用)
 	int								m_scrollY = 0;
 	int								m_wheelRemainder = 0;
 	int								m_clientWidth = 0;
@@ -155,7 +199,10 @@ private:
 	std::uint64_t									m_imagePixels = 0;	//!< 読み込み済みの画像の画素数の合計
 	std::wstring									m_documentPath;
 	std::unique_ptr<CMarkdownImageLoader>			m_imageLoader;
-	int												m_maxImageHeight = 0;
+
+	//! 前回の印刷で選んだプリンターと設定(PrintDlgW の hDevMode, hDevNames)
+	HGLOBAL											m_printDevMode = nullptr;
+	HGLOBAL											m_printDevNames = nullptr;
 };
 
 } // namespace markdown
